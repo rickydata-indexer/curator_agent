@@ -23,6 +23,15 @@ def get_subgraph_deployments() -> List[Dict]:
         stakedTokens
         queryFeesAmount
         queryFeeRebates
+        versions(first: 1) {
+          subgraph {
+            id
+            nftID
+            metadata {
+              displayName
+            }
+          }
+        }
       }
     }
     '''
@@ -45,6 +54,14 @@ def get_subgraph_deployments() -> List[Dict]:
         
         if not deployments:
             break
+        
+        # Add NFT ID to each deployment
+        for deployment in deployments:
+            if deployment.get('versions') and deployment['versions']:
+                subgraph = deployment['versions'][0].get('subgraph', {})
+                deployment['nftID'] = subgraph.get('nftID')
+                if subgraph.get('metadata'):
+                    deployment['displayName'] = subgraph['metadata'].get('displayName')
         
         all_deployments.extend(deployments)
         last_id = deployments[-1]['id']
@@ -79,6 +96,7 @@ def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
           signal
           subgraph {
             id
+            nftID
             metadata {
               displayName
             }
@@ -114,11 +132,11 @@ def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
             current_version = subgraph.get('currentVersion', {})
             subgraph_deployment = current_version.get('subgraphDeployment', {})
             
-            ipfs_hash = subgraph_deployment.get('ipfsHash')
+            nft_id = subgraph.get('nftID')
             signal_amount = float(signal.get('signal', 0)) / 1e18
             
-            if ipfs_hash:
-                user_signals[ipfs_hash] = signal_amount
+            if nft_id:
+                user_signals[nft_id] = signal_amount
     
     return user_signals
 

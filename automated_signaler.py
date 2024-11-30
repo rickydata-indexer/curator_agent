@@ -48,6 +48,8 @@ class AutomatedSignaler:
         # Extract query fees and counts from deployments
         query_fees = {}
         query_counts = {}
+        nft_ids = {}  # Map to store NFT IDs
+        
         for deployment in deployments:
             subgraph_id = deployment['ipfsHash']
             daily_fees = float(deployment.get('dailyQueryFees', 0)) / 1e18  # Convert from wei
@@ -55,6 +57,9 @@ class AutomatedSignaler:
             # Estimate query count from fees (assuming average fee)
             estimated_queries = int(daily_fees * 25000)  # Rough estimate
             query_counts[subgraph_id] = estimated_queries * 30  # Monthly queries
+            # Store NFT ID if available
+            if deployment.get('nftID'):
+                nft_ids[subgraph_id] = int(deployment['nftID'])
         
         grt_price = get_grt_price()
         
@@ -65,13 +70,21 @@ class AutomatedSignaler:
         user_signals = get_user_curation_signal(self.wallet_address)
         
         # Calculate optimal allocations (targeting top 5 subgraphs)
-        return calculate_optimal_allocations(
+        allocations = calculate_optimal_allocations(
             opportunities=opportunities,
             user_signals=user_signals or {},
             total_signal=available_grt,
             grt_price=grt_price,
             num_subgraphs=5
         )
+        
+        # Convert allocations to use NFT IDs
+        nft_allocations = {}
+        for subgraph_id, amount in allocations.items():
+            if subgraph_id in nft_ids:
+                nft_allocations[nft_ids[subgraph_id]] = amount
+        
+        return nft_allocations
 
     def present_plan(self, allocations: Dict[str, float]) -> bool:
         """Present the signaling plan to the user and get confirmation."""
@@ -81,8 +94,8 @@ class AutomatedSignaler:
         print(f"Total GRT to be signaled: {total_grt:.2f} GRT\n")
         
         print("Allocations:")
-        for subgraph_id, amount in allocations.items():
-            print(f"\nSubgraph {subgraph_id}:")
+        for nft_id, amount in allocations.items():
+            print(f"\nSubgraph NFT ID: {nft_id}")
             print(f"Amount to signal: {amount:.2f} GRT")
             
         while True:
@@ -93,11 +106,11 @@ class AutomatedSignaler:
 
     def execute_signaling(self, allocations: Dict[str, float]):
         """Execute the signaling transactions."""
-        for subgraph_id, amount in allocations.items():
+        for nft_id, amount in allocations.items():
             if amount <= 0:
                 continue
                 
-            print(f"\nProcessing subgraph {subgraph_id}")
+            print(f"\nProcessing subgraph NFT ID: {nft_id}")
             print(f"Amount to signal: {amount:.2f} GRT")
             
             try:
@@ -122,7 +135,7 @@ class AutomatedSignaler:
                     self.w3,
                     self.wallet_address,
                     self.private_key,
-                    int(subgraph_id),
+                    int(nft_id),  # Use NFT ID for signaling
                     amount
                 )
                 print(f"Signal transaction: {signal_tx}")
@@ -131,7 +144,7 @@ class AutomatedSignaler:
                 time.sleep(5)
                 
             except Exception as e:
-                print(f"Error processing subgraph {subgraph_id}: {str(e)}")
+                print(f"Error processing subgraph NFT ID {nft_id}: {str(e)}")
                 
                 # Ask whether to continue with remaining transactions
                 while True:

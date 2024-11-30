@@ -4,183 +4,147 @@ Graph Network API interactions for the curator agent.
 
 import os
 from typing import Dict, List, Optional
-from web3 import Web3
 import requests
-import logging
 
-# Initialize API key and gateway URL from environment
+# Get API URLs from environment
 THEGRAPH_API_KEY = os.getenv('THEGRAPH_API_KEY')
-GRAPH_GATEWAY_URL = os.getenv('GRAPH_GATEWAY_URL')
+GRAPH_API_URL = f"https://gateway.thegraph.com/api/{THEGRAPH_API_KEY}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp"
+GRT_PRICE_API_URL = f"https://gateway.thegraph.com/api/{THEGRAPH_API_KEY}/subgraphs/id/4RTrnxLZ4H8EBdpAQTcVc7LQY9kk85WNLyVzg5iXFQCH"
 
 def get_subgraph_deployments() -> List[Dict]:
-    """Get list of subgraph deployments with signaling data."""
-    query = """
-    query {
-        subgraphDeployments(
-            first: 100,
-            orderBy: signalledTokens,
-            orderDirection: desc
-        ) {
-            id
-            ipfsHash
-            signalAmount
-            signalledTokens
-            queryFeesAmount
-            queryFeeRebates
-            curatorFeeRewards
-            dailyQueryFees
-        }
+    """Fetch all subgraph deployments from The Graph API."""
+    query_template = '''
+    {
+      subgraphDeployments(first: 1000, where: {id_gt: "%s", deniedAt: 0}, orderBy: id, orderDirection: asc) {
+        id
+        ipfsHash
+        signalAmount
+        signalledTokens
+        stakedTokens
+        queryFeesAmount
+        queryFeeRebates
+      }
     }
-    """
+    '''
     
-    headers = {
-        'Content-Type': 'application/json'
-    }
+    all_deployments = []
+    last_id = ""
     
-    try:
-        response = requests.post(
-            GRAPH_GATEWAY_URL,
-            headers=headers,
-            json={'query': query}
-        )
+    while True:
+        query = query_template % last_id
+        response = requests.post(GRAPH_API_URL, json={'query': query})
+        if response.status_code != 200:
+            raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
         
-        if response.status_code == 200:
-            result = response.json()
-            if 'errors' in result:
-                print(f"GraphQL errors: {result['errors']}")
-                return []
-            return result.get('data', {}).get('subgraphDeployments', [])
-        else:
-            print(f"Request failed with status code: {response.status_code}")
-            print(f"Response: {response.text}")
+        data = response.json()
+        if 'errors' in data:
+            print(f"GraphQL errors: {data['errors']}")
             return []
-    except Exception as e:
-        print(f"Error fetching subgraph deployments: {str(e)}")
-        return []
-
-def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
-    """Get user's current curation signals."""
-    query = """
-    query($curator: String!) {
-        curator(id: $curator) {
-            signals {
-                subgraphDeployment {
-                    id
-                }
-                signalAmount
-            }
-        }
-    }
-    """
-    
-    variables = {'curator': wallet_address.lower()}
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    
-    try:
-        response = requests.post(
-            GRAPH_GATEWAY_URL,
-            headers=headers,
-            json={
-                'query': query,
-                'variables': variables
-            }
-        )
+            
+        deployments = data['data']['subgraphDeployments']
         
-        signals = {}
-        if response.status_code == 200:
-            result = response.json()
-            if 'errors' in result:
-                print(f"GraphQL errors: {result['errors']}")
-                return {}
-                
-            curator_data = result.get('data', {}).get('curator', {})
-            if curator_data and 'signals' in curator_data:
-                for signal in curator_data['signals']:
-                    deployment_id = signal['subgraphDeployment']['id']
-                    amount = float(signal['signalAmount']) / 1e18  # Convert from wei
-                    signals[deployment_id] = amount
-                    
-        return signals
-    except Exception as e:
-        print(f"Error fetching user signals: {str(e)}")
-        return {}
+        if not deployments:
+            break
+        
+        all_deployments.extend(deployments)
+        last_id = deployments[-1]['id']
+    
+    return all_deployments
 
 def get_grt_price() -> float:
-    """Get current GRT price."""
-    # For testing purposes, return a fixed price
-    # In production, this would fetch from an oracle or price feed
-    return 0.15
+    """Fetch current GRT price from The Graph API."""
+    query = """
+    {
+      assetPairs(
+        first: 1
+        where: {asset: "0xc944e90c64b2c07662a292be6244bdf05cda44a7", comparedAsset: "0x0000000000000000000000000000000000000348"}
+      ) {
+        currentPrice
+      }
+    }
+    """
+    response = requests.post(GRT_PRICE_API_URL, json={'query': query})
+    data = response.json()
+    return float(data['data']['assetPairs'][0]['currentPrice'])
 
-class GraphAPI:
-    """Handles interactions with The Graph Network API and contracts."""
-    
-    def __init__(self, web3_provider: str, api_key: Optional[str] = None):
-        """Initialize the Graph API client."""
-        self.w3 = Web3(Web3.HTTPProvider(web3_provider))
-        self.api_key = api_key
-        self.logger = logging.getLogger(__name__)
-        
-        # Contract addresses on Arbitrum
-        self.contracts = {
-            'L2GraphToken': '0x9623063377AD1B27544C965cCd7342f7EA7e88C7',
-            'L2Curation': '0x22d78fb4bc72e191C765807f8891B5e1785C8014',
-            'L2GNS': '0xec9A7fb6CbC2E41926127929c2dcE6e9c5D33Bec',
-            'SubgraphNFT': '0x3FbD54f0cc17b7aE649008dEEA12ed7D2622B23f'
-        }
-
-    def get_subgraph_deployment(self, deployment_id: str) -> Dict:
-        """Get detailed information about a specific subgraph deployment."""
-        query = """
-        query($id: ID!) {
-            subgraphDeployment(id: $id) {
-                id
-                allocationDataPoints(
-                    first: 30,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                    indexer {
-                        id
-                    }
-                }
-                queryDailyDataPoints(
-                    first: 30,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                }
+def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
+    """Fetch user's curation signals from The Graph API."""
+    query = """
+    query($wallet: String!) {
+      curator(id: $wallet) {
+        id
+        nameSignals(first: 1000) {
+          signalledTokens
+          unsignalledTokens
+          signal
+          subgraph {
+            id
+            metadata {
+              displayName
             }
+            currentVersion {
+              id
+              subgraphDeployment {
+                ipfsHash
+                pricePerShare
+                signalAmount
+              }
+            }
+          }
         }
-        """
-        
-        variables = {'id': deployment_id}
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        
-        try:
-            response = requests.post(
-                GRAPH_GATEWAY_URL,
-                headers=headers,
-                json={
-                    'query': query,
-                    'variables': variables
-                }
-            )
+      }
+    }
+    """
+    
+    variables = {
+        "wallet": wallet_address.lower()
+    }
+    
+    response = requests.post(GRAPH_API_URL, json={'query': query, 'variables': variables})
+    if response.status_code != 200:
+        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
+    
+    data = response.json()
+    curator_data = data.get('data', {}).get('curator')
+    
+    user_signals = {}
+    if curator_data and curator_data.get('nameSignals'):
+        for signal in curator_data['nameSignals']:
+            subgraph = signal.get('subgraph', {})
+            current_version = subgraph.get('currentVersion', {})
+            subgraph_deployment = current_version.get('subgraphDeployment', {})
             
-            if response.status_code == 200:
-                result = response.json()
-                if 'errors' in result:
-                    self.logger.error(f"GraphQL errors: {result['errors']}")
-                    return {}
-                return result.get('data', {}).get('subgraphDeployment', {})
-            else:
-                self.logger.error(f"Request failed with status code: {response.status_code}")
-                return {}
-        except Exception as e:
-            self.logger.error(f"Query failed: {str(e)}")
-            return {}
+            ipfs_hash = subgraph_deployment.get('ipfsHash')
+            signal_amount = float(signal.get('signal', 0)) / 1e18
+            
+            if ipfs_hash:
+                user_signals[ipfs_hash] = signal_amount
+    
+    return user_signals
+
+def get_account_balance(wallet_address: str) -> float:
+    """Fetch account's GRT balance from The Graph API."""
+    query = """
+    query($wallet: String!) {
+      graphAccounts(where: {id: $wallet}) {
+        id
+        balance
+      }
+    }
+    """
+    
+    variables = {
+        "wallet": wallet_address.lower()
+    }
+    
+    response = requests.post(GRAPH_API_URL, json={'query': query, 'variables': variables})
+    if response.status_code != 200:
+        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
+    
+    data = response.json()
+    accounts = data.get('data', {}).get('graphAccounts', [])
+    
+    if accounts:
+        # Convert balance from wei to GRT
+        return float(accounts[0].get('balance', 0)) / 1e18
+    return 0.0

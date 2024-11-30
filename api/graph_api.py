@@ -8,6 +8,111 @@ from web3 import Web3
 import requests
 import logging
 
+# Initialize API key and gateway URL from environment
+THEGRAPH_API_KEY = os.getenv('THEGRAPH_API_KEY')
+GRAPH_GATEWAY_URL = os.getenv('GRAPH_GATEWAY_URL')
+
+def get_subgraph_deployments() -> List[Dict]:
+    """Get list of subgraph deployments with signaling data."""
+    query = """
+    query {
+        subgraphDeployments(
+            first: 100,
+            orderBy: signalledTokens,
+            orderDirection: desc
+        ) {
+            id
+            ipfsHash
+            signalAmount
+            signalledTokens
+            queryFeesAmount
+            queryFeeRebates
+            curatorFeeRewards
+            dailyQueryFees
+        }
+    }
+    """
+    
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    
+    try:
+        response = requests.post(
+            GRAPH_GATEWAY_URL,
+            headers=headers,
+            json={'query': query}
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'errors' in result:
+                print(f"GraphQL errors: {result['errors']}")
+                return []
+            return result.get('data', {}).get('subgraphDeployments', [])
+        else:
+            print(f"Request failed with status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return []
+    except Exception as e:
+        print(f"Error fetching subgraph deployments: {str(e)}")
+        return []
+
+def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
+    """Get user's current curation signals."""
+    query = """
+    query($curator: String!) {
+        curator(id: $curator) {
+            signals {
+                subgraphDeployment {
+                    id
+                }
+                signalAmount
+            }
+        }
+    }
+    """
+    
+    variables = {'curator': wallet_address.lower()}
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    
+    try:
+        response = requests.post(
+            GRAPH_GATEWAY_URL,
+            headers=headers,
+            json={
+                'query': query,
+                'variables': variables
+            }
+        )
+        
+        signals = {}
+        if response.status_code == 200:
+            result = response.json()
+            if 'errors' in result:
+                print(f"GraphQL errors: {result['errors']}")
+                return {}
+                
+            curator_data = result.get('data', {}).get('curator', {})
+            if curator_data and 'signals' in curator_data:
+                for signal in curator_data['signals']:
+                    deployment_id = signal['subgraphDeployment']['id']
+                    amount = float(signal['signalAmount']) / 1e18  # Convert from wei
+                    signals[deployment_id] = amount
+                    
+        return signals
+    except Exception as e:
+        print(f"Error fetching user signals: {str(e)}")
+        return {}
+
+def get_grt_price() -> float:
+    """Get current GRT price."""
+    # For testing purposes, return a fixed price
+    # In production, this would fetch from an oracle or price feed
+    return 0.15
+
 class GraphAPI:
     """Handles interactions with The Graph Network API and contracts."""
     
@@ -16,11 +121,6 @@ class GraphAPI:
         self.w3 = Web3(Web3.HTTPProvider(web3_provider))
         self.api_key = api_key
         self.logger = logging.getLogger(__name__)
-        
-        # Get network subgraph endpoint from environment
-        self.NETWORK_SUBGRAPH = os.getenv('GRAPH_GATEWAY_URL')
-        if not self.NETWORK_SUBGRAPH:
-            raise ValueError("GRAPH_GATEWAY_URL not set in environment")
         
         # Contract addresses on Arbitrum
         self.contracts = {
@@ -58,196 +158,29 @@ class GraphAPI:
         """
         
         variables = {'id': deployment_id}
-        result = self._query_network_subgraph(query, variables)
-        return result.get('data', {}).get('subgraphDeployment', {})
-
-    def get_subgraph_deployments(self, first: int = 100) -> List[Dict]:
-        """Get list of subgraph deployments."""
-        query = """
-        query($first: Int!) {
-            subgraphDeployments(
-                first: $first,
-                orderBy: id,
-                orderDirection: desc
-            ) {
-                id
-                allocationDataPoints(
-                    first: 1,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                    indexer {
-                        id
-                    }
-                }
-                queryDailyDataPoints(
-                    first: 1,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                }
-            }
-        }
-        """
-        
-        variables = {'first': first}
-        result = self._query_network_subgraph(query, variables)
-        if result is None:
-            self.logger.error("Received None response from query")
-            return []
-            
-        deployments = result.get('data', {}).get('subgraphDeployments', [])
-        self.logger.info(f"Found {len(deployments)} deployments")
-        return deployments
-
-    def get_indexer_data(self, indexer_id: str) -> Dict:
-        """Get detailed information about a specific indexer."""
-        query = """
-        query($id: ID!) {
-            indexer(id: $id) {
-                id
-                indexerDailyDataPoints(
-                    first: 30,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                }
-                allocationDataPoints(
-                    first: 30,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                    subgraphDeployment {
-                        id
-                    }
-                }
-            }
-        }
-        """
-        
-        variables = {'id': indexer_id}
-        result = self._query_network_subgraph(query, variables)
-        return result.get('data', {}).get('indexer', {})
-
-    def get_indexers(self, first: int = 100) -> List[Dict]:
-        """Get list of indexers."""
-        query = """
-        query($first: Int!) {
-            indexers(
-                first: $first,
-                orderBy: id,
-                orderDirection: desc
-            ) {
-                id
-                indexerDailyDataPoints(
-                    first: 30,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                }
-                allocationDataPoints(
-                    first: 1,
-                    orderBy: id,
-                    orderDirection: desc
-                ) {
-                    id
-                    subgraphDeployment {
-                        id
-                    }
-                }
-            }
-        }
-        """
-        
-        variables = {'first': first}
-        result = self._query_network_subgraph(query, variables)
-        if result is None:
-            self.logger.error("Received None response from query")
-            return []
-            
-        indexers = result.get('data', {}).get('indexers', [])
-        self.logger.info(f"Found {len(indexers)} indexers")
-        return indexers
-
-    def get_network_metrics(self, days: int = 30) -> Dict:
-        """Get network-wide metrics."""
-        query = """
-        query($days: Int!) {
-            messageDataPoints(
-                first: $days,
-                orderBy: id,
-                orderDirection: desc
-            ) {
-                id
-            }
-            allocationDataPoints(
-                first: $days,
-                orderBy: id,
-                orderDirection: desc
-            ) {
-                id
-                indexer {
-                    id
-                }
-                subgraphDeployment {
-                    id
-                }
-            }
-            queryDailyDataPoints(
-                first: $days,
-                orderBy: id,
-                orderDirection: desc
-            ) {
-                id
-            }
-        }
-        """
-        
-        variables = {'days': days}
-        result = self._query_network_subgraph(query, variables)
-        if result is None:
-            self.logger.error("Received None response from query")
-            return {}
-            
-        return result.get('data', {})
-
-    def _query_network_subgraph(self, query: str, variables: Dict = None) -> Dict:
-        """Execute a query against the network subgraph."""
         headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.api_key}' if self.api_key else ''
+            'Content-Type': 'application/json'
         }
         
         try:
-            self.logger.info(f"Querying {self.NETWORK_SUBGRAPH}")
-            self.logger.debug(f"Query: {query}")
-            self.logger.debug(f"Variables: {variables}")
-            
             response = requests.post(
-                self.NETWORK_SUBGRAPH,
+                GRAPH_GATEWAY_URL,
                 headers=headers,
                 json={
                     'query': query,
-                    'variables': variables or {}
+                    'variables': variables
                 }
             )
             
-            response.raise_for_status()
-            result = response.json()
-            
-            self.logger.debug(f"Response: {result}")
-            
-            if 'errors' in result:
-                self.logger.error(f"GraphQL errors: {result['errors']}")
-                return None
-                
-            return result
-            
+            if response.status_code == 200:
+                result = response.json()
+                if 'errors' in result:
+                    self.logger.error(f"GraphQL errors: {result['errors']}")
+                    return {}
+                return result.get('data', {}).get('subgraphDeployment', {})
+            else:
+                self.logger.error(f"Request failed with status code: {response.status_code}")
+                return {}
         except Exception as e:
             self.logger.error(f"Query failed: {str(e)}")
-            return None
+            return {}

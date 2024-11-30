@@ -8,7 +8,6 @@ import time
 # Import existing modules
 from signal_grt import get_token_balance, approve_grt, mint_signal
 from api.graph_api import get_subgraph_deployments, get_grt_price, get_user_curation_signal
-from api.metrics_api import MetricsAPI
 from models.opportunities import calculate_opportunities, Opportunity
 from models.signals import calculate_optimal_allocations
 
@@ -34,10 +33,6 @@ class AutomatedSignaler:
         # Contract addresses
         self.grt_token = "0x9623063377AD1B27544C965cCd7342f7EA7e88C7"
         self.gns_contract = "0xec9A7fb6CbC2E41926127929c2dcE6e9c5D33Bec"
-        
-        # Initialize MetricsAPI
-        metrics_endpoint = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
-        self.metrics_api = MetricsAPI(metrics_endpoint)
 
     def get_balances(self) -> tuple:
         """Get ETH and GRT balances."""
@@ -45,27 +40,21 @@ class AutomatedSignaler:
         grt_balance = get_token_balance(self.w3, self.grt_token, self.wallet_address)
         return eth_balance, grt_balance
 
-    def get_query_metrics(self, subgraph_id: str) -> Dict:
-        """Get query metrics for a subgraph."""
-        return self.metrics_api.calculate_subgraph_metrics(subgraph_id)
-
     def calculate_optimal_distribution(self, available_grt: float) -> Dict[str, float]:
         """Calculate optimal signal distribution based on available GRT."""
         # Get required data
         deployments = get_subgraph_deployments()
         
-        # Get query metrics for each deployment
+        # Extract query fees and counts from deployments
         query_fees = {}
         query_counts = {}
         for deployment in deployments:
             subgraph_id = deployment['ipfsHash']
-            metrics = self.get_query_metrics(subgraph_id)
-            
-            if metrics:
-                query_fees[subgraph_id] = metrics.get('avg_daily_fees', 0)
-                # Estimate query count from fees (assuming average fee per query)
-                estimated_queries = int(metrics.get('avg_daily_fees', 0) * 25000)  # Rough estimate
-                query_counts[subgraph_id] = estimated_queries
+            daily_fees = float(deployment.get('dailyQueryFees', 0)) / 1e18  # Convert from wei
+            query_fees[subgraph_id] = daily_fees * 30  # Monthly fees
+            # Estimate query count from fees (assuming average fee)
+            estimated_queries = int(daily_fees * 25000)  # Rough estimate
+            query_counts[subgraph_id] = estimated_queries * 30  # Monthly queries
         
         grt_price = get_grt_price()
         
@@ -93,15 +82,8 @@ class AutomatedSignaler:
         
         print("Allocations:")
         for subgraph_id, amount in allocations.items():
-            # Get metrics for this subgraph
-            metrics = self.get_query_metrics(subgraph_id)
-            
             print(f"\nSubgraph {subgraph_id}:")
             print(f"Amount to signal: {amount:.2f} GRT")
-            if metrics:
-                print(f"Average daily fees: ${metrics.get('avg_daily_fees', 0):.2f}")
-                print(f"Fee growth rate: {metrics.get('fee_growth_rate', 0)*100:.1f}%")
-                print(f"Signal growth rate: {metrics.get('signal_growth_rate', 0)*100:.1f}%")
             
         while True:
             response = input("\nProceed with signaling? (yes/no): ").lower()

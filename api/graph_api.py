@@ -1,27 +1,26 @@
 """
 Graph Network API interactions for the curator agent.
-Handles subgraph queries and network data retrieval.
 """
 
 import os
 from typing import Dict, List, Optional
 from web3 import Web3
 import requests
+import logging
 
 class GraphAPI:
     """Handles interactions with The Graph Network API and contracts."""
     
-    NETWORK_SUBGRAPH = "https://api.thegraph.com/subgraphs/name/graphprotocol/graph-network-arbitrum"
-    
     def __init__(self, web3_provider: str, api_key: Optional[str] = None):
-        """Initialize the Graph API client.
-        
-        Args:
-            web3_provider: Arbitrum RPC endpoint
-            api_key: Optional Graph API key for higher rate limits
-        """
+        """Initialize the Graph API client."""
         self.w3 = Web3(Web3.HTTPProvider(web3_provider))
         self.api_key = api_key
+        self.logger = logging.getLogger(__name__)
+        
+        # Get network subgraph endpoint from environment
+        self.NETWORK_SUBGRAPH = os.getenv('GRAPH_GATEWAY_URL')
+        if not self.NETWORK_SUBGRAPH:
+            raise ValueError("GRAPH_GATEWAY_URL not set in environment")
         
         # Contract addresses on Arbitrum
         self.contracts = {
@@ -31,144 +30,224 @@ class GraphAPI:
             'SubgraphNFT': '0x3FbD54f0cc17b7aE649008dEEA12ed7D2622B23f'
         }
 
-    def get_subgraph_by_id(self, subgraph_id: str) -> Dict:
-        """Get detailed information about a specific subgraph.
-        
-        Args:
-            subgraph_id: The NFT ID of the subgraph
-            
-        Returns:
-            Dict containing subgraph details
-        """
+    def get_subgraph_deployment(self, deployment_id: str) -> Dict:
+        """Get detailed information about a specific subgraph deployment."""
         query = """
         query($id: ID!) {
-            subgraph(id: $id) {
+            subgraphDeployment(id: $id) {
                 id
-                nftID
-                owner { id }
-                currentVersion {
+                allocationDataPoints(
+                    first: 30,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
                     id
-                    subgraphDeployment {
+                    indexer {
                         id
-                        signalledTokens
-                        signalAmount
-                        queryFeesAmount
-                        stakedTokens
                     }
                 }
-                createdAt
-                updatedAt
-                signalledTokens
-                unsignalledTokens
-                nameSignalAmount
-                nameSignalCount
-                metadataHash
-                description
-                image
-                displayName
+                queryDailyDataPoints(
+                    first: 30,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
+                    id
+                }
             }
         }
         """
         
-        variables = {'id': subgraph_id}
+        variables = {'id': deployment_id}
         result = self._query_network_subgraph(query, variables)
-        return result.get('data', {}).get('subgraph', {})
+        return result.get('data', {}).get('subgraphDeployment', {})
 
-    def get_top_subgraphs(self, first: int = 100) -> List[Dict]:
-        """Get list of top subgraphs by signalled tokens.
-        
-        Args:
-            first: Number of subgraphs to fetch
-            
-        Returns:
-            List of subgraph data dictionaries
-        """
+    def get_subgraph_deployments(self, first: int = 100) -> List[Dict]:
+        """Get list of subgraph deployments."""
         query = """
         query($first: Int!) {
-            subgraphs(
-                first: $first
-                orderBy: signalledTokens
+            subgraphDeployments(
+                first: $first,
+                orderBy: id,
                 orderDirection: desc
-                where: {
-                    currentVersion_not: null
-                    signalledTokens_gt: 0
-                }
             ) {
                 id
-                nftID
-                signalledTokens
-                currentVersion {
+                allocationDataPoints(
+                    first: 1,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
                     id
-                    subgraphDeployment {
+                    indexer {
                         id
-                        queryFeesAmount
-                        signalAmount
                     }
                 }
-                displayName
+                queryDailyDataPoints(
+                    first: 1,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
+                    id
+                }
             }
         }
         """
         
         variables = {'first': first}
         result = self._query_network_subgraph(query, variables)
-        return result.get('data', {}).get('subgraphs', [])
-
-    def get_curator_signals(self, curator_address: str) -> List[Dict]:
-        """Get all active signals for a curator address.
-        
-        Args:
-            curator_address: Ethereum address of the curator
+        if result is None:
+            self.logger.error("Received None response from query")
+            return []
             
-        Returns:
-            List of signal data dictionaries
-        """
+        deployments = result.get('data', {}).get('subgraphDeployments', [])
+        self.logger.info(f"Found {len(deployments)} deployments")
+        return deployments
+
+    def get_indexer_data(self, indexer_id: str) -> Dict:
+        """Get detailed information about a specific indexer."""
         query = """
-        query($curator: String!) {
-            curator(id: $curator) {
+        query($id: ID!) {
+            indexer(id: $id) {
                 id
-                totalSignalledTokens
-                totalUnsignalledTokens
-                signals {
+                indexerDailyDataPoints(
+                    first: 30,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
                     id
-                    signalledTokens
-                    unsignalledTokens
+                }
+                allocationDataPoints(
+                    first: 30,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
+                    id
                     subgraphDeployment {
                         id
-                        signalAmount
-                        queryFeesAmount
                     }
                 }
             }
         }
         """
         
-        variables = {'curator': curator_address.lower()}
+        variables = {'id': indexer_id}
         result = self._query_network_subgraph(query, variables)
-        return result.get('data', {}).get('curator', {}).get('signals', [])
+        return result.get('data', {}).get('indexer', {})
+
+    def get_indexers(self, first: int = 100) -> List[Dict]:
+        """Get list of indexers."""
+        query = """
+        query($first: Int!) {
+            indexers(
+                first: $first,
+                orderBy: id,
+                orderDirection: desc
+            ) {
+                id
+                indexerDailyDataPoints(
+                    first: 30,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
+                    id
+                }
+                allocationDataPoints(
+                    first: 1,
+                    orderBy: id,
+                    orderDirection: desc
+                ) {
+                    id
+                    subgraphDeployment {
+                        id
+                    }
+                }
+            }
+        }
+        """
+        
+        variables = {'first': first}
+        result = self._query_network_subgraph(query, variables)
+        if result is None:
+            self.logger.error("Received None response from query")
+            return []
+            
+        indexers = result.get('data', {}).get('indexers', [])
+        self.logger.info(f"Found {len(indexers)} indexers")
+        return indexers
+
+    def get_network_metrics(self, days: int = 30) -> Dict:
+        """Get network-wide metrics."""
+        query = """
+        query($days: Int!) {
+            messageDataPoints(
+                first: $days,
+                orderBy: id,
+                orderDirection: desc
+            ) {
+                id
+            }
+            allocationDataPoints(
+                first: $days,
+                orderBy: id,
+                orderDirection: desc
+            ) {
+                id
+                indexer {
+                    id
+                }
+                subgraphDeployment {
+                    id
+                }
+            }
+            queryDailyDataPoints(
+                first: $days,
+                orderBy: id,
+                orderDirection: desc
+            ) {
+                id
+            }
+        }
+        """
+        
+        variables = {'days': days}
+        result = self._query_network_subgraph(query, variables)
+        if result is None:
+            self.logger.error("Received None response from query")
+            return {}
+            
+        return result.get('data', {})
 
     def _query_network_subgraph(self, query: str, variables: Dict = None) -> Dict:
-        """Execute a query against the network subgraph.
+        """Execute a query against the network subgraph."""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}' if self.api_key else ''
+        }
         
-        Args:
-            query: GraphQL query string
-            variables: Optional query variables
+        try:
+            self.logger.info(f"Querying {self.NETWORK_SUBGRAPH}")
+            self.logger.debug(f"Query: {query}")
+            self.logger.debug(f"Variables: {variables}")
             
-        Returns:
-            Query result data
-        """
-        headers = {'Content-Type': 'application/json'}
-        if self.api_key:
-            headers['Authorization'] = f'Bearer {self.api_key}'
+            response = requests.post(
+                self.NETWORK_SUBGRAPH,
+                headers=headers,
+                json={
+                    'query': query,
+                    'variables': variables or {}
+                }
+            )
             
-        response = requests.post(
-            self.NETWORK_SUBGRAPH,
-            headers=headers,
-            json={
-                'query': query,
-                'variables': variables or {}
-            }
-        )
-        
-        response.raise_for_status()
-        return response.json()
+            response.raise_for_status()
+            result = response.json()
+            
+            self.logger.debug(f"Response: {result}")
+            
+            if 'errors' in result:
+                self.logger.error(f"GraphQL errors: {result['errors']}")
+                return None
+                
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Query failed: {str(e)}")
+            return None

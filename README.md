@@ -1,64 +1,72 @@
-# Automated Curation Agent
+# Automated Curator Agent
 
-An AI-powered agent that automatically manages curation signal on The Graph network to optimize returns and support high-quality subgraphs.
+An AI-powered agent that automatically manages curation signal on The Graph network by analyzing subgraph performance metrics, indexer allocations, and network data to optimize returns.
 
 ## Overview
 
-This agent analyzes subgraph metrics and market data to automatically allocate curation signal, aiming to:
-- Maximize curation returns through strategic signal placement
-- Support high-quality subgraphs with proven reliability
-- Rebalance signal allocations based on performance metrics
-- Maintain a diversified curation portfolio
+The curator agent monitors The Graph Network on Arbitrum and automatically manages curation signal by:
+1. Analyzing subgraph deployments and their performance metrics
+2. Tracking indexer allocations and support
+3. Monitoring query volumes and fee generation
+4. Making data-driven decisions for signal placement
 
-## Project Structure
+## Architecture
 
 ```
 curator_agent/
 ├── api/
-│   ├── graph_api.py         # The Graph Network API interactions
-│   ├── metrics_api.py       # Query metrics and performance data
-│   └── arbitrum_api.py      # Arbitrum contract interactions
+│   ├── graph_api.py         # Graph Network API interactions
+│   ├── metrics_api.py       # Performance metrics collection
+│   └── arbitrum_api.py      # Contract interactions
 ├── models/
 │   ├── subgraph.py         # Subgraph data models
-│   ├── metrics.py          # Performance metrics calculations
+│   ├── metrics.py          # Performance calculations
 │   ├── portfolio.py        # Signal portfolio management
-│   └── strategy.py         # Curation strategy models
+│   └── strategy.py         # Curation strategies
 ├── agent/
-│   ├── analyzer.py         # Data analysis and signal recommendations
+│   ├── analyzer.py         # Data analysis engine
 │   ├── executor.py         # Transaction execution
 │   └── monitor.py          # Portfolio monitoring
-├── utils/
-│   ├── config.py          # Configuration management
-│   ├── contracts.py       # Contract ABIs and addresses
-│   └── logger.py          # Logging utilities
-└── main.py                # Agent entry point
+└── utils/
+    ├── config.py          # Configuration management
+    └── logger.py          # Logging utilities
 ```
 
 ## Key Features
 
-1. **Automated Analysis**
-   - Query volume tracking
-   - Fee generation analysis
-   - Historical performance metrics
-   - Network-wide curation trends
+1. **Subgraph Analysis**
+   - Track deployment performance
+   - Monitor indexer allocations
+   - Analyze query metrics
+   - Calculate potential returns
 
-2. **Smart Signal Management**
+2. **Portfolio Management**
    - Automated signal allocation
    - Risk-adjusted position sizing
    - Dynamic rebalancing
    - Gas-optimized transactions
 
-3. **Portfolio Optimization**
-   - APR optimization
-   - Risk diversification
-   - Correlation analysis
-   - Performance tracking
+3. **Performance Monitoring**
+   - Real-time metric tracking
+   - APR calculations
+   - Risk assessment
+   - Network correlation analysis
 
-4. **Risk Management**
-   - Signal concentration limits
-   - Slippage protection
-   - Gas price monitoring
-   - Emergency withdrawal capabilities
+## Data Sources
+
+The agent integrates with multiple data sources:
+
+1. **Graph Network Subgraph**
+   - Subgraph deployments
+   - Indexer allocations
+   - Query metrics
+   - Network statistics
+
+2. **Smart Contracts**
+   - Signal transactions
+   - Curation shares
+   - Token transfers
+   - Network parameters
 
 ## Setup
 
@@ -67,26 +75,29 @@ curator_agent/
 pip install -r requirements.txt
 ```
 
-2. Configure environment variables:
+2. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+Required environment variables:
 ```env
 # Network Configuration
-ARBITRUM_RPC_URL=your_arbitrum_rpc_url
-GRAPH_API_KEY=your_graph_api_key
+ARBITRUM_RPC_URL=your_arbitrum_rpc
+GRAPH_GATEWAY_URL=your_gateway_url
+THEGRAPH_API_KEY=your_api_key
 
 # Wallet Configuration
-CURATOR_ADDRESS=your_curator_address
+AGENT_ADDRESS=your_agent_address
 PRIVATE_KEY=your_private_key
 
 # Agent Configuration
-MIN_APR_THRESHOLD=10
-MAX_SIGNAL_PER_SUBGRAPH=100000
-GAS_PRICE_LIMIT=100
-REBALANCE_INTERVAL=86400
-```
-
-3. Initialize the agent:
-```bash
-python main.py
+MIN_APR_THRESHOLD=10.0
+MAX_RISK_SCORE=60.0
+CHECK_INTERVAL=3600
+MAX_SLIPPAGE=0.02
+MAX_GAS_PRICE=100
 ```
 
 ## Contract Addresses (Arbitrum)
@@ -100,31 +111,23 @@ CONTRACTS = {
 }
 ```
 
-## Strategy Components
+## Usage
 
-1. **Signal Allocation Strategy**
-   - APR-weighted allocation
-   - Query volume growth trends
-   - Network positioning score
-   - Historical reliability metrics
+Run the agent:
+```bash
+python main.py
+```
 
-2. **Rebalancing Logic**
-   - Performance-based rebalancing
-   - Gas-optimized batching
-   - Slippage-aware execution
-   - Portfolio drift monitoring
-
-3. **Risk Management**
-   - Maximum allocation limits
-   - Minimum liquidity requirements
-   - Network diversity targets
-   - Emergency circuit breakers
+The agent will:
+1. Monitor network metrics and subgraph performance
+2. Analyze opportunities based on configured strategies
+3. Execute signal allocations when profitable
+4. Maintain optimal portfolio balance
 
 ## Development Roadmap
 
-1. **Phase 1: Core Infrastructure**
+1. **Phase 1: Core Infrastructure** (Current)
    - Basic API integration
-   - Contract interaction layer
    - Data collection pipeline
    - Simple allocation strategy
 

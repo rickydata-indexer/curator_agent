@@ -4,118 +4,173 @@ Models for handling curation signal calculations and optimizations.
 
 from typing import Dict, List
 from dataclasses import dataclass
-from .opportunities import Opportunity
+from .opportunities import Opportunity, calculate_opportunity_metrics
 
 @dataclass
-class UserOpportunity:
-    """Data class representing a user's curation opportunity."""
-    ipfs_hash: str
-    user_signal: float
-    total_signal: float
-    portion_owned: float
-    estimated_earnings: float
-    apr: float
-    weekly_queries: int
+class AllocationResult:
+    """Results from allocation optimization."""
+    allocations: Dict[str, float]  # IPFS hash to GRT amount
+    total_allocated: float
+    expected_apr: float
+    expected_earnings: float
 
-def calculate_optimal_allocations(
-    opportunities: List[Opportunity],
-    user_signals: Dict[str, float],
-    total_signal: float,
-    grt_price: float,
-    num_subgraphs: int = 5,
-    min_allocation: float = 100  # Minimum GRT per allocation
-) -> Dict[str, float]:
-    """Calculate optimal allocation of signals considering current holdings.
+class AllocationOptimizer:
+    """Optimizes allocation of GRT across opportunities."""
     
-    Args:
-        opportunities: List of available opportunities
-        user_signals: Current user signal allocations
-        total_signal: Total GRT available for allocation
-        grt_price: Current GRT price in USD
-        num_subgraphs: Maximum number of subgraphs to allocate to
-        min_allocation: Minimum GRT to allocate per subgraph
+    ENTRY_COST_PERCENTAGE = 0.005  # 0.5% entry cost
+    CURATOR_SHARE = 0.10  # 10% of query fees
+    EARNINGS_PER_100K_QUERIES = 4  # $4 per 100k queries
+    STEP_SIZE = 100  # How much to increase allocations each time (100 GRT minimum)
+    MAX_ITERATIONS = 1000  # Prevent infinite loops
+    
+    def __init__(self, opportunities: List[Opportunity], grt_price: float):
+        self.opportunities = opportunities
+        self.grt_price = grt_price
+    
+    def calculate_opportunity_apr(self, opp: Opportunity, additional_signal: float) -> tuple:
+        """Calculate APR and earnings for an opportunity with additional signal."""
+        # Calculate total signal after allocation
+        signal_amount = opp.signal_amount + additional_signal
+        signalled_tokens = opp.signalled_tokens + additional_signal
         
-    Returns:
-        Dictionary mapping subgraph IDs to GRT amounts to signal
-    """
-    # Sort opportunities by APR
-    sorted_opps = sorted(opportunities, key=lambda x: x.apr, reverse=True)
-    
-    # Take top N opportunities
-    top_opportunities = sorted_opps[:num_subgraphs]
-    
-    # Initialize allocations
-    allocations = {opp.ipfs_hash: 0.0 for opp in top_opportunities}
-    remaining_signal = total_signal
-    
-    # First pass: ensure minimum allocation
-    min_total = min_allocation * len(top_opportunities)
-    if total_signal < min_total:
-        # If we can't meet minimum allocation, distribute evenly
-        per_allocation = total_signal / len(top_opportunities)
-        return {opp.ipfs_hash: per_allocation for opp in top_opportunities}
-    
-    # Allocate minimum amount to each opportunity
-    for opp in top_opportunities:
-        allocations[opp.ipfs_hash] = min_allocation
-        remaining_signal -= min_allocation
-    
-    # Second pass: distribute remaining signal proportionally to APR
-    while remaining_signal > min_allocation:
+        # Calculate metrics using the same logic as opportunities.py
+        _, _, estimated_earnings, apr = calculate_opportunity_metrics(
+            signal_amount,
+            signalled_tokens,
+            opp.annual_queries,
+            self.grt_price,
+            opp.signal_amount == 0  # Is new position if current signal is 0
+        )
+        
+        return apr, estimated_earnings
+
+    def find_best_opportunity(self, current_allocations: Dict[str, float], step_size: float) -> tuple:
+        """Find the best opportunity for the next allocation step."""
         best_apr = -1
         best_opp = None
+        best_metrics = None
         
-        for opp in top_opportunities:
-            # Calculate new APR if we add min_allocation more
-            current_allocation = allocations[opp.ipfs_hash]
-            new_signal_amount = opp.signal_amount + current_allocation + min_allocation
-            new_signalled_tokens = opp.signalled_tokens + current_allocation + min_allocation
+        for opp in self.opportunities:
+            current_allocation = current_allocations.get(opp.ipfs_hash, 0)
             
-            # Calculate new metrics
-            portion_owned = new_signal_amount / new_signalled_tokens if new_signalled_tokens > 0 else 0
-            estimated_earnings = opp.curator_share * portion_owned
-            apr = (estimated_earnings / (new_signal_amount * grt_price)) * 100 if new_signal_amount > 0 else 0
+            # Skip if we've hit the 10% limit
+            if current_allocation >= self.total_grt * 0.10:
+                continue
+            
+            # Skip if total allocation would be less than minimum
+            if current_allocation + step_size < 100:
+                continue
+            
+            # Calculate APR with additional step_size allocation
+            apr, earnings = self.calculate_opportunity_apr(
+                opp,
+                current_allocation + step_size
+            )
             
             if apr > best_apr:
                 best_apr = apr
                 best_opp = opp
+                best_metrics = (apr, earnings)
         
-        if best_opp:
-            # Add min_allocation to the best opportunity
-            allocations[best_opp.ipfs_hash] += min_allocation
-            remaining_signal -= min_allocation
-        else:
-            break
-    
-    # Remove any allocations that are below minimum
-    return {k: v for k, v in allocations.items() if v >= min_allocation}
+        return best_opp, best_metrics
 
-def calculate_user_opportunities(
-    user_signals: Dict[str, float],
-    opportunities: List[Opportunity],
-    grt_price: float
-) -> List[UserOpportunity]:
-    """Calculate user-specific opportunities from their current signals."""
-    user_opportunities = []
-    
-    for opp in opportunities:
-        ipfs_hash = opp.ipfs_hash
+    def calculate_portfolio_metrics(self, allocations: Dict[str, float]) -> tuple:
+        """Calculate portfolio-wide metrics."""
+        total_earnings = 0
+        total_allocated = sum(allocations.values())
         
-        if ipfs_hash in user_signals:
-            user_signal = user_signals[ipfs_hash]
-            total_signal = opp.signalled_tokens
-            portion_owned = user_signal / total_signal if total_signal > 0 else 0
-            estimated_earnings = opp.curator_share * portion_owned
-            apr = (estimated_earnings / (user_signal * grt_price)) * 100 if user_signal > 0 else 0
+        if total_allocated == 0:
+            return 0, 0
+        
+        # Calculate entry costs
+        active_positions = len([v for v in allocations.values() if v >= 100])  # Only count positions >= 100 GRT
+        total_entry_cost = total_allocated * self.ENTRY_COST_PERCENTAGE * active_positions
+        
+        # Calculate earnings for each position
+        position_aprs = []
+        for opp in self.opportunities:
+            allocation = allocations.get(opp.ipfs_hash, 0)
+            if allocation >= 100:  # Only consider positions >= 100 GRT
+                apr, earnings = self.calculate_opportunity_apr(opp, allocation)
+                total_earnings += earnings
+                position_aprs.append(apr)
+        
+        # Subtract entry costs from earnings
+        net_earnings = total_earnings - (total_entry_cost * self.grt_price)
+        
+        # Calculate average APR
+        portfolio_apr = sum(position_aprs) / len(position_aprs) if position_aprs else 0
+        
+        return net_earnings, portfolio_apr
+
+    def optimize_allocation(self, available_grt: float) -> AllocationResult:
+        """Optimize GRT allocation using iterative approach."""
+        if available_grt < 100:
+            raise Exception("Available GRT must be at least 100")
+        
+        self.total_grt = available_grt  # Store for 10% limit check
+        allocations = {}
+        remaining_grt = available_grt
+        iterations = 0
+        current_step = self.STEP_SIZE
+        
+        while remaining_grt >= 100 and iterations < self.MAX_ITERATIONS:  # Ensure minimum 100 GRT allocation
+            iterations += 1
+            made_progress = False
             
-            user_opportunities.append(UserOpportunity(
-                ipfs_hash=ipfs_hash,
-                user_signal=user_signal,
-                total_signal=total_signal,
-                portion_owned=portion_owned,
-                estimated_earnings=estimated_earnings,
-                apr=apr,
-                weekly_queries=opp.weekly_queries
-            ))
-    
-    return sorted(user_opportunities, key=lambda x: x.apr, reverse=True)
+            # Adjust step size if needed
+            if current_step > remaining_grt:
+                current_step = remaining_grt
+            
+            # Try to find best opportunity
+            best_opp, metrics = self.find_best_opportunity(allocations, current_step)
+            
+            if not best_opp or not metrics:
+                # If no opportunities found with current step size, try smaller step
+                if current_step > 100:  # Don't go below 100 GRT minimum
+                    current_step = max(100, current_step / 2)
+                    continue
+                else:
+                    break
+            
+            # Calculate how much we can allocate
+            current_allocation = allocations.get(best_opp.ipfs_hash, 0)
+            max_allocation = min(
+                self.total_grt * 0.10,  # 10% limit
+                remaining_grt  # Can't allocate more than we have
+            )
+            space_available = max_allocation - current_allocation
+            
+            if space_available < 100:  # Skip if we can't meet minimum allocation
+                continue
+            
+            # Allocate what we can
+            allocation_size = min(current_step, space_available)
+            if allocation_size >= 100:  # Only allocate if we meet minimum
+                if best_opp.ipfs_hash in allocations:
+                    allocations[best_opp.ipfs_hash] += allocation_size
+                else:
+                    allocations[best_opp.ipfs_hash] = allocation_size
+                remaining_grt -= allocation_size
+                made_progress = True
+            
+            # If we couldn't make progress with any opportunity, reduce step size
+            if not made_progress and current_step > 100:
+                current_step = max(100, current_step / 2)
+            
+            # Break if we can't make progress even with minimum step
+            if not made_progress and current_step <= 100:
+                break
+        
+        # Remove any allocations below minimum
+        allocations = {k: v for k, v in allocations.items() if v >= 100}
+        
+        # Calculate final metrics
+        earnings, apr = self.calculate_portfolio_metrics(allocations)
+        
+        return AllocationResult(
+            allocations=allocations,
+            total_allocated=float(sum(allocations.values())),
+            expected_apr=apr,
+            expected_earnings=earnings
+        )

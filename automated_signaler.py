@@ -1,4 +1,5 @@
 import os
+import requests
 from web3 import Web3
 from dotenv import load_dotenv
 from typing import Dict, List
@@ -7,9 +8,9 @@ import time
 
 # Import existing modules
 from signal_grt import get_token_balance, approve_grt, mint_signal
-from api.graph_api import get_subgraph_deployments, get_grt_price, get_user_curation_signal
+from api import get_subgraph_deployments, get_grt_price, get_account_balance, process_query_data
 from models.opportunities import calculate_opportunities, Opportunity
-from models.signals import calculate_optimal_allocations
+from models.signals import AllocationOptimizer
 
 class AutomatedSignaler:
     def __init__(self):
@@ -40,53 +41,112 @@ class AutomatedSignaler:
         grt_balance = get_token_balance(self.w3, self.grt_token, self.wallet_address)
         return eth_balance, grt_balance
 
-    def calculate_optimal_distribution(self, available_grt: float) -> Dict[str, float]:
+    def calculate_optimal_distribution(self, available_grt: float) -> tuple[Dict[str, float], List[Opportunity]]:
         """Calculate optimal signal distribution based on available GRT."""
-        # Get required data
+        # Get current versions and their deployments
+        print("\nFetching current versions...")
+        current_versions = self._get_current_versions()
+        print(f"Found {len(current_versions)} current versions")
+        
+        # Get query fees and counts from Supabase
+        print("\nFetching query data from Supabase...")
+        query_fees, query_counts = process_query_data()
+        print(f"Found query data for {len(query_counts)} subgraphs")
+        
+        # Filter query data to only include current versions
+        filtered_query_fees = {}
+        filtered_query_counts = {}
+        for ipfs_hash, data in current_versions.items():
+            if ipfs_hash in query_counts:
+                filtered_query_fees[ipfs_hash] = query_fees[ipfs_hash]
+                filtered_query_counts[ipfs_hash] = query_counts[ipfs_hash]
+        
+        print(f"\nFiltered to {len(filtered_query_counts)} current versions with query data")
+        
+        # Get deployments data
         deployments = get_subgraph_deployments()
         
-        # Extract query fees and counts from deployments
-        query_fees = {}
-        query_counts = {}
-        nft_ids = {}  # Map to store NFT IDs
-        
+        # Filter deployments to only include current versions
+        filtered_deployments = []
         for deployment in deployments:
-            subgraph_id = deployment['ipfsHash']
-            daily_fees = float(deployment.get('dailyQueryFees', 0)) / 1e18  # Convert from wei
-            query_fees[subgraph_id] = daily_fees * 30  # Monthly fees
-            # Estimate query count from fees (assuming average fee)
-            estimated_queries = int(daily_fees * 25000)  # Rough estimate
-            query_counts[subgraph_id] = estimated_queries * 30  # Monthly queries
-            # Store NFT ID if available
-            if deployment.get('nftID'):
-                nft_ids[subgraph_id] = int(deployment['nftID'])
+            if deployment['ipfsHash'] in current_versions:
+                deployment['nftID'] = current_versions[deployment['ipfsHash']]['nftID']
+                filtered_deployments.append(deployment)
+        
+        print(f"Found {len(filtered_deployments)} matching deployments")
         
         grt_price = get_grt_price()
+        print(f"\nCurrent GRT price: ${grt_price:.4f}")
         
-        # Calculate opportunities
-        opportunities = calculate_opportunities(deployments, query_fees, query_counts, grt_price)
+        # Calculate opportunities using filtered data
+        print("\nCalculating opportunities...")
+        opportunities = calculate_opportunities(filtered_deployments, filtered_query_fees, filtered_query_counts, grt_price)
+        print(f"Found {len(opportunities)} viable opportunities")
         
-        # Get current signals
-        user_signals = get_user_curation_signal(self.wallet_address)
+        if opportunities:
+            print("\nTop 5 opportunities by potential APR:")
+            for i, opp in enumerate(opportunities[:5], 1):
+                print(f"\n{i}. IPFS Hash: {opp.ipfs_hash}")
+                print(f"   Weekly Queries: {opp.weekly_queries:,}")
+                print(f"   Current APR: {opp.current_apr:.2f}%")
+                print(f"   Potential APR: {opp.potential_apr:.2f}%")
         
-        # Calculate optimal allocations (targeting top 5 subgraphs)
-        allocations = calculate_optimal_allocations(
-            opportunities=opportunities,
-            user_signals=user_signals or {},
-            total_signal=available_grt,
-            grt_price=grt_price,
-            num_subgraphs=5
-        )
+        # Initialize optimizer with opportunities
+        optimizer = AllocationOptimizer(opportunities, grt_price)
+        
+        # Get optimal allocation
+        print("\nOptimizing allocations...")
+        result = optimizer.optimize_allocation(available_grt)
         
         # Convert allocations to use NFT IDs
         nft_allocations = {}
-        for subgraph_id, amount in allocations.items():
-            if subgraph_id in nft_ids:
-                nft_allocations[nft_ids[subgraph_id]] = amount
+        for ipfs_hash, amount in result.allocations.items():
+            nft_id = current_versions[ipfs_hash]['nftID']
+            nft_allocations[nft_id] = amount
         
-        return nft_allocations
+        print(f"\nFound {len(nft_allocations)} optimal allocations")
+        
+        return nft_allocations, opportunities
 
-    def present_plan(self, allocations: Dict[str, float]) -> bool:
+    def _get_current_versions(self) -> Dict[str, Dict]:
+        """Get current versions of all subgraphs."""
+        query = """
+        {
+          subgraphs {
+            nftID
+            currentVersion {
+              subgraphDeployment {
+                ipfsHash
+              }
+            }
+          }
+        }
+        """
+        
+        response = requests.post(
+            f"https://gateway.thegraph.com/api/{os.getenv('THEGRAPH_API_KEY')}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp",
+            json={'query': query}
+        )
+        
+        if response.status_code != 200:
+            print("Warning: Failed to fetch current versions")
+            return {}
+            
+        data = response.json()
+        current_versions = {}
+        
+        for subgraph in data.get('data', {}).get('subgraphs', []):
+            if (subgraph.get('currentVersion') and 
+                subgraph['currentVersion'].get('subgraphDeployment') and 
+                subgraph.get('nftID')):
+                ipfs_hash = subgraph['currentVersion']['subgraphDeployment']['ipfsHash']
+                current_versions[ipfs_hash] = {
+                    'nftID': subgraph['nftID']
+                }
+        
+        return current_versions
+
+    def present_plan(self, allocations: Dict[str, float], opportunities: List[Opportunity]) -> bool:
         """Present the signaling plan to the user and get confirmation."""
         print("\n=== Proposed Signaling Plan ===\n")
         
@@ -94,9 +154,22 @@ class AutomatedSignaler:
         print(f"Total GRT to be signaled: {total_grt:.2f} GRT\n")
         
         print("Allocations:")
+        # Create a reverse mapping of NFT ID to opportunity for lookup
+        opp_by_nft = {opp.nft_id: opp for opp in opportunities}
+        
         for nft_id, amount in allocations.items():
-            print(f"\nSubgraph NFT ID: {nft_id}")
-            print(f"Amount to signal: {amount:.2f} GRT")
+            opp = opp_by_nft.get(str(nft_id))  # Convert NFT ID to string for lookup
+            if opp:
+                print(f"\nSubgraph NFT ID: {nft_id}")
+                print(f"IPFS Hash: {opp.ipfs_hash}")
+                print(f"Amount to signal: {amount:.2f} GRT")
+                print(f"Current APR: {opp.current_apr:.2f}%")
+                print(f"Potential APR: {opp.potential_apr:.2f}%")
+                print(f"Weekly Queries: {opp.weekly_queries:,}")
+                print(f"Est. Annual Earnings: ${opp.estimated_earnings:.2f}")
+            else:
+                print(f"\nSubgraph NFT ID: {nft_id}")
+                print(f"Amount to signal: {amount:.2f} GRT")
             
         while True:
             response = input("\nProceed with signaling? (yes/no): ").lower()
@@ -175,10 +248,10 @@ def main():
             
         # Calculate optimal distribution
         print("\nCalculating optimal signal distribution...")
-        allocations = signaler.calculate_optimal_distribution(grt_balance)
+        allocations, opportunities = signaler.calculate_optimal_distribution(grt_balance)
         
         # Present plan and get confirmation
-        if signaler.present_plan(allocations):
+        if signaler.present_plan(allocations, opportunities):
             # Execute signaling
             signaler.execute_signaling(allocations)
             print("\nSignaling complete!")

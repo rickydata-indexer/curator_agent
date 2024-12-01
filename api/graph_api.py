@@ -23,15 +23,6 @@ def get_subgraph_deployments() -> List[Dict]:
         stakedTokens
         queryFeesAmount
         queryFeeRebates
-        versions(first: 1) {
-          subgraph {
-            id
-            nftID
-            metadata {
-              displayName
-            }
-          }
-        }
       }
     }
     '''
@@ -46,22 +37,10 @@ def get_subgraph_deployments() -> List[Dict]:
             raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
         
         data = response.json()
-        if 'errors' in data:
-            print(f"GraphQL errors: {data['errors']}")
-            return []
-            
         deployments = data['data']['subgraphDeployments']
         
         if not deployments:
             break
-        
-        # Add NFT ID to each deployment
-        for deployment in deployments:
-            if deployment.get('versions') and deployment['versions']:
-                subgraph = deployment['versions'][0].get('subgraph', {})
-                deployment['nftID'] = subgraph.get('nftID')
-                if subgraph.get('metadata'):
-                    deployment['displayName'] = subgraph['metadata'].get('displayName')
         
         all_deployments.extend(deployments)
         last_id = deployments[-1]['id']
@@ -83,62 +62,6 @@ def get_grt_price() -> float:
     response = requests.post(GRT_PRICE_API_URL, json={'query': query})
     data = response.json()
     return float(data['data']['assetPairs'][0]['currentPrice'])
-
-def get_user_curation_signal(wallet_address: str) -> Dict[str, float]:
-    """Fetch user's curation signals from The Graph API."""
-    query = """
-    query($wallet: String!) {
-      curator(id: $wallet) {
-        id
-        nameSignals(first: 1000) {
-          signalledTokens
-          unsignalledTokens
-          signal
-          subgraph {
-            id
-            nftID
-            metadata {
-              displayName
-            }
-            currentVersion {
-              id
-              subgraphDeployment {
-                ipfsHash
-                pricePerShare
-                signalAmount
-              }
-            }
-          }
-        }
-      }
-    }
-    """
-    
-    variables = {
-        "wallet": wallet_address.lower()
-    }
-    
-    response = requests.post(GRAPH_API_URL, json={'query': query, 'variables': variables})
-    if response.status_code != 200:
-        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
-    
-    data = response.json()
-    curator_data = data.get('data', {}).get('curator')
-    
-    user_signals = {}
-    if curator_data and curator_data.get('nameSignals'):
-        for signal in curator_data['nameSignals']:
-            subgraph = signal.get('subgraph', {})
-            current_version = subgraph.get('currentVersion', {})
-            subgraph_deployment = current_version.get('subgraphDeployment', {})
-            
-            nft_id = subgraph.get('nftID')
-            signal_amount = float(signal.get('signal', 0)) / 1e18
-            
-            if nft_id:
-                user_signals[nft_id] = signal_amount
-    
-    return user_signals
 
 def get_account_balance(wallet_address: str) -> float:
     """Fetch account's GRT balance from The Graph API."""

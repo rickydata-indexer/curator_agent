@@ -1,0 +1,527 @@
+app:
+  description: Pull a user's current curation signals that have not been modified
+    in more than 28 days
+  icon: 🚥
+  icon_background: '#D5D9EB'
+  mode: workflow
+  name: curation_user_signals
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: 1735256843329-source-1735257735132-target
+      selected: false
+      source: '1735256843329'
+      sourceHandle: source
+      target: '1735257735132'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: iteration
+      id: 1735257735132-source-1735325456687-target
+      selected: false
+      source: '1735257735132'
+      sourceHandle: source
+      target: '1735325456687'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        iteration_id: '1735325456687'
+        sourceType: iteration-start
+        targetType: code
+      id: 1735325456687start-source-1735325474254-target
+      selected: false
+      source: 1735325456687start
+      sourceHandle: source
+      target: '1735325474254'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: false
+        sourceType: variable-aggregator
+        targetType: end
+      id: 1735333621782-source-1735257573661-target
+      selected: false
+      source: '1735333621782'
+      sourceHandle: source
+      target: '1735257573661'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: iteration
+        targetType: variable-aggregator
+      id: 1735325456687-source-1735333621782-target
+      selected: false
+      source: '1735325456687'
+      sourceHandle: source
+      target: '1735333621782'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1735256818831-source-1735669322387-target
+      source: '1735256818831'
+      sourceHandle: source
+      target: '1735669322387'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: http-request
+      id: 1735669322387-source-1735256843329-target
+      source: '1735669322387'
+      sourceHandle: source
+      target: '1735256843329'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        iteration_id: '1735325456687'
+        sourceType: code
+        targetType: tool
+      id: 1735325474254-source-1735330791799-target
+      source: '1735325474254'
+      sourceHandle: source
+      target: '1735330791799'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: user_wallet
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: user_wallet
+        - label: infura_api_key
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: infura_api_key
+      height: 114
+      id: '1735256818831'
+      position:
+        x: 219.66862088593547
+        y: 282
+      positionAbsolute:
+        x: 219.66862088593547
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-1
+            key: ''
+            type: text
+            value: '{"query":"{ graphAccount(id: \"{{#1735669322387.user_wallet#}}\")
+              { id balance curator { nameSignals(where: {nameSignal_gt: \"1\"}) {
+              signal averageCostBasis lastNameSignalChange subgraph { nftID currentVersion
+              { subgraphDeployment { ipfsHash } } } } } } }"}'
+          type: json
+        desc: ''
+        headers: Content-Type:application/json
+        method: post
+        params: ''
+        selected: false
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: HTTP Request
+        type: http-request
+        url: https://gateway.thegraph.com/api/41e64cd6613e5cad2f9a1ec9b020579e/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp
+        variables: []
+      height: 172
+      id: '1735256843329'
+      position:
+        x: 826.1728448608584
+        y: 282
+      positionAbsolute:
+        x: 826.1728448608584
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1735333621782'
+          - output
+          variable: body
+        selected: false
+        title: End
+        type: end
+      height: 88
+      id: '1735257573661'
+      position:
+        x: 2624.3897457109842
+        y: 282
+      positionAbsolute:
+        x: 2624.3897457109842
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "from typing import Dict, Any\nimport json\nfrom decimal import Decimal\n\
+          import time\nfrom math import floor\n\ndef main(price_data: str) -> Dict[str,\
+          \ Any]:\n    \"\"\"\n    Calculate original cost basis and current value\
+          \ for each subgraph signal,\n    including the number of days since last\
+          \ signal change.\n    Filters out entries less than 28 days old.\n    \"\
+          \"\"\n    try:\n        # Parse the input data\n        data = json.loads(price_data)\n\
+          \        \n        # Get current timestamp\n        current_timestamp =\
+          \ int(time.time())\n        \n        # Get the nameSignals array\n    \
+          \    name_signals = data.get(\"data\", {}).get(\"graphAccount\", {}).get(\"\
+          curator\", {}).get(\"nameSignals\", [])\n        \n        # Process each\
+          \ signal\n        results = []\n        for signal in name_signals:\n  \
+          \          # Skip signals with 0 value\n            if signal.get(\"signal\"\
+          ) == \"0\":\n                continue\n                \n            # Get\
+          \ deployment info\n            subgraph = signal.get(\"subgraph\", {})\n\
+          \            current_version = subgraph.get(\"currentVersion\", {})\n  \
+          \          deployment = current_version.get(\"subgraphDeployment\", {})\n\
+          \            ipfs_hash = deployment.get(\"ipfsHash\")\n            \n  \
+          \          if not ipfs_hash:\n                continue\n               \
+          \ \n            # Convert wei values to GRT (divide by 10^18)\n        \
+          \    signal_amount = Decimal(signal.get(\"signal\", \"0\")) / Decimal(\"\
+          1000000000000000000\")\n            cost_basis = Decimal(signal.get(\"averageCostBasis\"\
+          , \"0\")) / Decimal(\"1000000000000000000\")\n            \n           \
+          \ # Calculate days since last change\n            last_change = int(signal.get(\"\
+          lastNameSignalChange\", 0))\n            days_since_change = floor((current_timestamp\
+          \ - last_change) / 86400)  # 86400 seconds in a day\n            \n    \
+          \        # Skip if less than 28 days old\n            if days_since_change\
+          \ < 28:\n                continue\n                \n            # Calculate\
+          \ current value (for now using signal amount as placeholder)\n         \
+          \   current_value = signal_amount\n            \n            # Add to results\
+          \ if current value is at least 1\n            if current_value >= 1:\n \
+          \               results.append({\n                    \"subgraph_deployment\"\
+          : ipfs_hash,\n                    \"original_cost_basis\": float(round(cost_basis,\
+          \ 2)),\n                    \"current_value\": float(round(current_value,\
+          \ 2)),\n                    \"difference\": float(round(current_value -\
+          \ cost_basis, 2)),\n                    \"percent_change\": float(round(((current_value\
+          \ - cost_basis) / cost_basis * 100) if cost_basis > 0 else 0, 2)),\n   \
+          \                 \"number_of_days_since_change\": days_since_change\n \
+          \               })\n        \n        # Sort by absolute difference to show\
+          \ biggest changes first\n        results.sort(key=lambda x: abs(x[\"difference\"\
+          ]), reverse=True)\n        \n        return {\n            \"body\": results\n\
+          \        }\n            \n    except Exception as e:\n        return {\n\
+          \            \"body\": f\"Error: {str(e)}\"  # Return error message instead\
+          \ of empty list for debugging\n        }"
+        code_language: python3
+        desc: ''
+        outputs:
+          body:
+            children: null
+            type: array[object]
+        selected: false
+        title: Code
+        type: code
+        variables:
+        - value_selector:
+          - '1735256843329'
+          - body
+          variable: price_data
+      height: 52
+      id: '1735257735132'
+      position:
+        x: 1147.047094259125
+        y: 282
+      positionAbsolute:
+        x: 1147.047094259125
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: check the APR of specific subgraphs
+        error_handle_mode: terminated
+        height: 228
+        is_parallel: true
+        iterator_selector:
+        - '1735257735132'
+        - body
+        output_selector:
+        - '1735330791799'
+        - text
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1735325456687start
+        title: Iteration
+        type: iteration
+        width: 750
+      height: 228
+      id: '1735325456687'
+      position:
+        x: 1467.5177982927644
+        y: 282
+      positionAbsolute:
+        x: 1467.5177982927644
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 750
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1735325456687start
+      parentId: '1735325456687'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 1491.5177982927644
+        y: 350
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        code: "def main(response_to_parse: str) -> dict:\n    # Since response_to_parse\
+          \ is a dictionary containing the subgraph_deployment\n    return {\n   \
+          \     \"result\": response_to_parse[\"subgraph_deployment\"]\n    }"
+        code_language: python3
+        desc: ''
+        isInIteration: true
+        iteration_id: '1735325456687'
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: Code 2
+        type: code
+        variables:
+        - value_selector:
+          - '1735325456687'
+          - item
+          variable: response_to_parse
+      height: 52
+      id: '1735325474254'
+      parentId: '1735325456687'
+      position:
+        x: 128
+        y: 65
+      positionAbsolute:
+        x: 1595.5177982927644
+        y: 347
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+      zIndex: 1002
+    - data:
+        desc: ''
+        isInIteration: true
+        iteration_id: '1735325456687'
+        provider_id: e592bce7-84e5-41b3-8606-3a79a3dd64d8
+        provider_name: curation_check_apr_subgraph
+        provider_type: workflow
+        selected: false
+        title: curation_check_apr_subgraph
+        tool_configurations: {}
+        tool_label: curation_check_apr_subgraph
+        tool_name: curation_check_apr_subgraph
+        tool_parameters:
+          infura_api_key:
+            type: mixed
+            value: '{{#1735256818831.infura_api_key#}}'
+          ipfs_subgrah_deployment:
+            type: mixed
+            value: '{{#1735325474254.result#}}'
+          user_wallet:
+            type: mixed
+            value: '{{#1735669322387.user_wallet#}}'
+        type: tool
+      height: 52
+      id: '1735330791799'
+      parentId: '1735325456687'
+      position:
+        x: 457.5597807876302
+        y: 65
+      positionAbsolute:
+        x: 1925.0775790803946
+        y: 347
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+      zIndex: 1002
+    - data:
+        desc: ''
+        output_type: array[string]
+        selected: false
+        title: Variable Aggregator
+        type: variable-aggregator
+        variables:
+        - - '1735325456687'
+          - output
+      height: 111
+      id: '1735333621782'
+      position:
+        x: 2298.1062262396404
+        y: 282
+      positionAbsolute:
+        x: 2298.1062262396404
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        author: rickydata
+        desc: ''
+        height: 97
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"This
+          was changed to 0d temporarily because needed real data here for testing","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 257
+      height: 97
+      id: '1735653422844'
+      position:
+        x: 808.7073859178147
+        y: 163.8681773147999
+      positionAbsolute:
+        x: 808.7073859178147
+        y: 163.8681773147999
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 257
+    - data:
+        code: "def main(user_wallet: str) -> dict:\n    return {\n        \"user_wallet\"\
+          : user_wallet.lower()\n    }"
+        code_language: python3
+        desc: ''
+        outputs:
+          user_wallet:
+            children: null
+            type: string
+        selected: false
+        title: Lowercase address
+        type: code
+        variables:
+        - value_selector:
+          - '1735256818831'
+          - user_wallet
+          variable: user_wallet
+      height: 52
+      id: '1735669322387'
+      position:
+        x: 515.5621658995755
+        y: 282
+      positionAbsolute:
+        x: 515.5621658995755
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -475.9654361276596
+      y: 56.72723861197551
+      zoom: 0.7308980410675602

@@ -1,0 +1,548 @@
+app:
+  description: Burn signals from a subgraph
+  icon: 🔥
+  icon_background: '#FFD5D5'
+  mode: workflow
+  name: unsignal_from_subgraph
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: f0e90c8a-47e5-40e2-abd0-17d53ef1344b
+    name: min_apr
+    selector: []
+    value: '30'
+    value_type: string
+  - description: ''
+    id: 5995d0c5-de92-4f6a-b1bc-55485b4f2f81
+    name: thegraph_api_key
+    selector: []
+    value: 49b39f34adcb0cc1e9cddf5fae6cd9b1
+    value_type: string
+  - description: ''
+    id: 830ec227-856c-454f-847a-9f1b26404517
+    name: wallet_address
+    selector: []
+    value: '0xAB1D1366de8b5D1E3479f01b0D73BcC93048f6d5'
+    value_type: string
+  - description: ''
+    id: 3e056908-8fd9-409e-9629-986bb70bf1b0
+    name: infura_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  - description: ''
+    id: 62c771a9-3486-4591-aa3e-31d0eec790c5
+    name: agent_one_pk
+    selector: []
+    value: ''
+    value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1733078508640-source-1733087354699-target
+      selected: false
+      source: '1733078508640'
+      sourceHandle: source
+      target: '1733087354699'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: code
+      id: 1733087354699-source-1735224439267-target
+      selected: false
+      source: '1733087354699'
+      sourceHandle: source
+      target: '1735224439267'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1733083900000-source-1733082635245-target
+      source: '1733083900000'
+      sourceHandle: source
+      target: '1733082635245'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: tool
+      id: 1735224439267-source-1735234366065-target
+      source: '1735224439267'
+      sourceHandle: source
+      target: '1735234366065'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: code
+      id: 1735234366065-source-1733083900000-target
+      source: '1735234366065'
+      sourceHandle: source
+      target: '1733083900000'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: amount_signal
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: amount_signal
+        - label: subgraph_deployment_ipfs_hash
+          max_length: 80
+          options: []
+          required: true
+          type: text-input
+          variable: subgraph_deployment_ipfs_hash
+        - label: infura_api_key
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: infura_api_key
+      height: 140
+      id: '1733078508640'
+      position:
+        x: 60.533740681881
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 60.533740681881
+        y: 326.4279599004965
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1733083900000'
+          - result
+          variable: content
+        selected: false
+        title: End
+        type: end
+      height: 88
+      id: '1733082635245'
+      position:
+        x: 1632.6150034662544
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 1632.6150034662544
+        y: 326.4279599004965
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "from web3 import Web3\nimport json\nimport requests\nimport math\n\
+          from typing import Dict, Any\nfrom web3.exceptions import TimeExhausted,\
+          \ TransactionNotFound\n\ndef get_ipfs_hash_for_nft_id(subgraph_id: str,\
+          \ thegraph_api_key: str) -> str:\n    \"\"\"Helper function to get IPFS\
+          \ hash from NFT ID\"\"\"\n    url = f\"https://gateway.thegraph.com/api/{thegraph_api_key}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp\"\
+          \n    query = \"\"\"\n    query GetIPFSHash($nftID: String!) {\n       \
+          \ subgraphs(where: {nftID: $nftID}) {\n            currentVersion {\n  \
+          \              subgraphDeployment {\n                    ipfsHash\n    \
+          \            }\n            }\n        }\n    }\n    \"\"\"\n    \n    try:\n\
+          \        response = requests.post(\n            url,\n            json={\n\
+          \                'query': query,\n                'variables': {'nftID':\
+          \ subgraph_id}\n            }\n        )\n        \n        if response.status_code\
+          \ != 200:\n            return None\n            \n        data = response.json()\n\
+          \        if 'errors' in data:\n            return None\n            \n \
+          \       subgraphs = data.get('data', {}).get('subgraphs', [])\n        if\
+          \ not subgraphs:\n            return None\n            \n        return\
+          \ subgraphs[0].get('currentVersion', {}).get('subgraphDeployment', {}).get('ipfsHash')\n\
+          \    except:\n        return None\n\ndef main(wallet_address: str, amount_signal:\
+          \ float, private_key: str, infura_api_key: str, subgraph_id: str, high_apr_data:\
+          \ str, thegraph_api_key: str) -> Dict[str, Any]:\n    \"\"\"\n    Burn signal\
+          \ (undelegate) from a subgraph on Arbitrum.\n    Uses Arbitrum's gas estimation.\n\
+          \    Prevents undelegating from subgraphs with high APR.\n    Rounds down\
+          \ signal amount to 3 decimal places.\n    \"\"\"\n    try:\n        # Round\
+          \ down amount_signal to 3 decimal places\n        amount_signal = math.floor(amount_signal\
+          \ * 1000) / 1000\n        print(f\"Rounded down signal amount: {amount_signal}\"\
+          )  # Debug log\n\n        # Parse high APR data\n        metrics = json.loads(high_apr_data)\n\
+          \        if \"new_signals\" in metrics:\n            # The new_signals is\
+          \ a string that needs to be parsed again\n            new_signals = json.loads(metrics[\"\
+          new_signals\"])\n            if len(new_signals) > 0:\n                subgraph_metrics\
+          \ = new_signals[0]\n                print(f\"Found metrics for subgraph:\
+          \ {subgraph_metrics}\")  # Debug log\n                \n               \
+          \ # Get IPFS hash for the subgraph ID\n                ipfs_hash = get_ipfs_hash_for_nft_id(subgraph_id,\
+          \ thegraph_api_key)\n                print(f\"IPFS hash for subgraph ID\
+          \ {subgraph_id}: {ipfs_hash}\")  # Debug log\n                \n       \
+          \         # Check if this is the same subgraph and has high APR\n      \
+          \          if ipfs_hash and ipfs_hash == subgraph_metrics[\"ipfs_hash\"\
+          ]:\n                    if subgraph_metrics[\"apr\"] > 30:  # Only block\
+          \ if APR is above 30%\n                        return {\n              \
+          \              \"result\": f\"Cannot undelegate from this subgraph as it\
+          \ is currently earning {subgraph_metrics['apr']:.2f}% APR\"\n          \
+          \              }\n            \n        w3 = Web3(Web3.HTTPProvider(f'https://arbitrum-mainnet.infura.io/v3/{infura_api_key}'))\n\
+          \        \n        if not w3.is_connected():\n            return {\"result\"\
+          : \"Failed to connect to Arbitrum network\"}\n            \n        if not\
+          \ w3.is_address(wallet_address):\n            return {\"result\": \"Invalid\
+          \ wallet address provided\"}\n            \n        wallet_address = w3.to_checksum_address(wallet_address)\n\
+          \        \n        eth_balance = w3.eth.get_balance(wallet_address)\n  \
+          \      if eth_balance == 0:\n            return {\"result\": \"No ETH available\
+          \ for gas fees on Arbitrum\"}\n            \n        gns_contract_addr =\
+          \ w3.to_checksum_address(\"0xec9A7fb6CbC2E41926127929c2dcE6e9c5D33Bec\"\
+          )\n        \n        try:\n            gns_contract = w3.eth.contract(\n\
+          \                address=gns_contract_addr,\n                abi=[{\n  \
+          \                  \"inputs\": [\n                        {\"name\": \"\
+          _subgraphID\", \"type\": \"uint256\"},\n                        {\"name\"\
+          : \"_nSignal\", \"type\": \"uint256\"},\n                        {\"name\"\
+          : \"_tokensOutMin\", \"type\": \"uint256\"}\n                    ],\n  \
+          \                  \"name\": \"burnSignal\",\n                    \"outputs\"\
+          : [{\"name\": \"\", \"type\": \"uint256\"}],\n                    \"stateMutability\"\
+          : \"nonpayable\",\n                    \"type\": \"function\"\n        \
+          \        }]\n            )\n            \n            # Build burn transaction\
+          \ for gas estimation\n            burn_tx = gns_contract.functions.burnSignal(\n\
+          \                int(subgraph_id),\n                w3.to_wei(amount_signal,\
+          \ 'ether'),\n                0  # Minimum tokens to receive (0 for now,\
+          \ could be calculated)\n            ).build_transaction({\n            \
+          \    'from': wallet_address,\n                'nonce': w3.eth.get_transaction_count(wallet_address),\n\
+          \                'chainId': w3.eth.chain_id,\n            })\n         \
+          \   \n            # Estimate gas for burning\n            estimated_gas\
+          \ = w3.eth.estimate_gas(burn_tx)\n            \n            # Get current\
+          \ gas prices\n            base_fee = w3.eth.get_block('latest')['baseFeePerGas']\n\
+          \            priority_fee = w3.eth.max_priority_fee\n            \n    \
+          \        # Update transaction with estimated gas and prices\n          \
+          \  burn_tx.update({\n                'gas': int(estimated_gas * 1.2),  #\
+          \ Add 20% buffer\n                'maxFeePerGas': base_fee * 2,  # Double\
+          \ the base fee for safety\n                'maxPriorityFeePerGas': priority_fee,\n\
+          \                'type': 2  # EIP-1559\n            })\n            \n \
+          \           signed_burn = w3.eth.account.sign_transaction(burn_tx, private_key)\n\
+          \            burn_hash = w3.eth.send_raw_transaction(signed_burn.raw_transaction)\n\
+          \            \n            try:\n                burn_receipt = w3.eth.wait_for_transaction_receipt(burn_hash,\
+          \ timeout=180)\n                \n                if burn_receipt['status']\
+          \ == 1:\n                    return {\n                        \"result\"\
+          : json.dumps({\n                            \"status\": \"success\",\n \
+          \                           \"burn_hash\": burn_hash.hex(),\n          \
+          \                  \"wallet_address\": wallet_address,\n               \
+          \             \"subgraph_id\": subgraph_id,\n                          \
+          \  \"amount_signal\": amount_signal,\n                            \"block_number\"\
+          : burn_receipt['blockNumber']\n                        })\n            \
+          \        }\n                else:\n                    return {\"result\"\
+          : f\"Signal burning failed. Hash: {burn_hash.hex()}\"}\n               \
+          \     \n            except TimeExhausted:\n                return {\n  \
+          \                  \"result\": f\"Signal burning pending. Hash: {burn_hash.hex()}\"\
+          \n                }\n                \n        except Exception as e:\n\
+          \            return {\"result\": f\"Error during signal burning: {str(e)}\"\
+          }\n            \n    except Exception as e:\n        print(f\"Error during\
+          \ operation: {str(e)}\")  # Debug log\n        return {\"result\": f\"Error\
+          \ during operation: {str(e)}\"}"
+        code_language: python3
+        desc: Burns the input signal amount from the selected subgraph. Prevents unsignalling
+          on anything above 30% APR
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: Burn Signal from Subgraph
+        type: code
+        variables:
+        - value_selector:
+          - env
+          - wallet_address
+          variable: wallet_address
+        - value_selector:
+          - '1733078508640'
+          - amount_signal
+          variable: amount_signal
+        - value_selector:
+          - env
+          - agent_one_pk
+          variable: private_key
+        - value_selector:
+          - env
+          - infura_api_key
+          variable: infura_api_key
+        - value_selector:
+          - '1733087354699'
+          - subgraph_nft_id
+          variable: subgraph_id
+        - value_selector:
+          - '1735234366065'
+          - text
+          variable: high_apr_data
+        - value_selector:
+          - env
+          - thegraph_api_key
+          variable: thegraph_api_key
+      height: 128
+      id: '1733083900000'
+      position:
+        x: 1304.330173177801
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 1304.330173177801
+        y: 326.4279599004965
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "import requests\nimport json\nfrom typing import Dict, Any\n\ndef main(subgraph_deployment_ipfs_hash:\
+          \ str, thegraph_api_key: str) -> Dict[str, Any]:\n    \"\"\"\n    Query\
+          \ The Graph gateway to get the NFT ID for a subgraph deployment.\n    \n\
+          \    Args:\n        subgraph_deployment_ipfs_hash: IPFS hash of the subgraph\
+          \ deployment\n        thegraph_api_key: API key for The Graph gateway\n\
+          \        \n    Returns:\n        Dict containing subgraph_nft_id or error\
+          \ message\n    \"\"\"\n    try:\n        # GraphQL endpoint\n        url\
+          \ = f\"https://gateway.thegraph.com/api/{thegraph_api_key}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp\"\
+          \n        \n        # Modify query to filter for specific ipfsHash\n   \
+          \     query = \"\"\"\n        query GetNFTID($ipfsHash: String!) {\n   \
+          \         subgraphDeployments(where: {ipfsHash: $ipfsHash}) {\n        \
+          \        ipfsHash\n                versions {\n                    subgraph\
+          \ {\n                        nftID\n                    }\n            \
+          \    }\n            }\n        }\n        \"\"\"\n        \n        # Variables\
+          \ for the query\n        variables = {\n            \"ipfsHash\": subgraph_deployment_ipfs_hash\n\
+          \        }\n        \n        # Make the request\n        response = requests.post(\n\
+          \            url,\n            json={\n                'query': query,\n\
+          \                'variables': variables\n            }\n        )\n    \
+          \    \n        # Check if request was successful\n        if response.status_code\
+          \ != 200:\n            return {\n                \"subgraph_nft_id\": f\"\
+          Query failed with status code: {response.status_code}\"\n            }\n\
+          \            \n        # Parse response\n        data = response.json()\n\
+          \        \n        # Check for errors in response\n        if 'errors' in\
+          \ data:\n            return {\n                \"subgraph_nft_id\": f\"\
+          GraphQL error: {data['errors']}\"\n            }\n            \n       \
+          \ # Process data with more specific path\n        deployments = data.get('data',\
+          \ {}).get('subgraphDeployments', [])\n        \n        if not deployments:\n\
+          \            return {\n                \"subgraph_nft_id\": f\"No deployment\
+          \ found for IPFS hash: {subgraph_deployment_ipfs_hash}\"\n            }\n\
+          \            \n        # Get first deployment (should only be one since\
+          \ we filtered)\n        deployment = deployments[0]\n        versions =\
+          \ deployment.get('versions', [])\n        \n        if not versions:\n \
+          \           return {\n                \"subgraph_nft_id\": \"No versions\
+          \ found for this deployment\"\n            }\n            \n        # Get\
+          \ NFT ID from first version\n        nft_id = versions[0].get('subgraph',\
+          \ {}).get('nftID')\n        if not nft_id:\n            return {\n     \
+          \           \"subgraph_nft_id\": \"NFT ID not found for this deployment\"\
+          \n            }\n            \n        return {\n            \"subgraph_nft_id\"\
+          : nft_id\n        }\n            \n    except Exception as e:\n        return\
+          \ {\n            \"subgraph_nft_id\": f\"Error during query: {str(e)}\"\n\
+          \        }"
+        code_language: python3
+        desc: Pull the NFT ID needed to interact with the smart contracts
+        outputs:
+          subgraph_nft_id:
+            children: null
+            type: string
+        selected: false
+        title: Pull NFT ID
+        type: code
+        variables:
+        - value_selector:
+          - '1733078508640'
+          - subgraph_deployment_ipfs_hash
+          variable: subgraph_deployment_ipfs_hash
+        - value_selector:
+          - env
+          - thegraph_api_key
+          variable: thegraph_api_key
+      height: 96
+      id: '1733087354699'
+      position:
+        x: 369.16565015508615
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 369.16565015508615
+        y: 326.4279599004965
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        author: rickydata
+        desc: ''
+        height: 136
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"Works!
+          Before making tool public, make sure signal has been open more than 28 days","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 258
+      height: 136
+      id: '1735212905347'
+      position:
+        x: 229.72361756962698
+        y: 162.05615739882728
+      positionAbsolute:
+        x: 229.72361756962698
+        y: 162.05615739882728
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 258
+    - data:
+        code: "\ndef main() -> dict:\n    return {\n        \"min_subgraph_signal\"\
+          : 0,\n        \"min_weekly_queries\": 0,\n        \"min_apr\": 30\n    }\n"
+        code_language: python3
+        desc: Set needed variables for curation best opportunities tool call setting
+          minimum APR to 30%
+        outputs:
+          min_apr:
+            children: null
+            type: number
+          min_subgraph_signal:
+            children: null
+            type: number
+          min_weekly_queries:
+            children: null
+            type: number
+        selected: false
+        title: Set needed variables
+        type: code
+        variables: []
+      height: 112
+      id: '1735224439267'
+      position:
+        x: 674.9778126802333
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 674.9778126802333
+        y: 326.4279599004965
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        author: rickydata
+        desc: ''
+        height: 132
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"as
+          a final step we will use supabase to confirm signal has been open more than
+          28 days. Which we will want to replace with a subgraph based approach down
+          the line","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 310
+      height: 132
+      id: '1735225281502'
+      position:
+        x: 1284.7688266757968
+        y: 152.7218069736707
+      positionAbsolute:
+        x: 1284.7688266757968
+        y: 152.7218069736707
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 310
+    - data:
+        desc: ''
+        provider_id: e592bce7-84e5-41b3-8606-3a79a3dd64d8
+        provider_name: curation_check_apr_subgraph
+        provider_type: workflow
+        selected: false
+        title: curation_check_apr_subgraph
+        tool_configurations: {}
+        tool_label: curation_check_apr_subgraph
+        tool_name: curation_check_apr_subgraph
+        tool_parameters:
+          infura_api_key:
+            type: mixed
+            value: '{{#1733078508640.infura_api_key#}}'
+          ipfs_subgrah_deployment:
+            type: mixed
+            value: '{{#1733078508640.subgraph_deployment_ipfs_hash#}}'
+          user_wallet:
+            type: mixed
+            value: '{{#env.wallet_address#}}'
+        type: tool
+      height: 52
+      id: '1735234366065'
+      position:
+        x: 991.591985156543
+        y: 326.4279599004965
+      positionAbsolute:
+        x: 991.591985156543
+        y: 326.4279599004965
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -385.4151139857099
+      y: 38.38576371388285
+      zoom: 0.7156971529830835

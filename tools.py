@@ -212,6 +212,34 @@ def optimize_signals(subgraphs_data: Dict, total_new_signal: float = 1000.0, min
     return result_df
 
 
+def curate_subgraph(subgraph_deployment_ipfs_hash, amount_grt):
+    # Load environment variables from .env file
+    load_dotenv()
+    """Use Dify workflow to curate on subgraph"""
+    url = "https://dify.rickydata.com/v1/workflows/run"
+    headers = {
+        'Authorization': f"Bearer {os.getenv('KEY_curate_subgraph')}",
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        'inputs': {
+            'amount_grt': amount_grt,
+            'subgraph_deployment_ipfs_hash': subgraph_deployment_ipfs_hash,
+            'infura_api_key': f"{os.getenv('INFURA_API_KEY')}",
+            'user_wallet': f"{os.getenv('AGENT_WALLET')}"
+        },
+        'response_mode': 'blocking',
+        'user': 'curation_agent_python'
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+    response_data = response.json()
+    
+    if response_data.get('data', {}).get('outputs', {}):
+        return response_data['data']['outputs']
+    return response_data
+
+
 if __name__ == "__main__":
     # Test functions
     print("\nTesting curation_user_signals:")
@@ -231,8 +259,12 @@ if __name__ == "__main__":
     print(result4)
 
     print("\nTesting optimize_signals:")
-    sample_data = result3 # uses results from curation_best_opportunities
-    # Run optimization
+    sample_data = result3 # use results from curation_best_opportunities
     result5 = optimize_signals(sample_data, total_new_signal=25000.0, min_allocation=100.0)
     print(result5)
+
+    print("\nTesting curate_subgraph:")
+    result6 = curate_subgraph("QmUzRg2HHMpbgf6Q4VHKNDbtBEJnyp5JWCh2gUX9AV6jXv", 0.1)
+    print(result6)
     
+

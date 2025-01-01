@@ -1,4 +1,4 @@
-from tools import pull_subgraph_query_volume, curation_user_signals, unsignal_from_subgraph, curation_best_opportunities, pull_grt_balance_from_subgraph
+from tools import curation_user_signals, unsignal_from_subgraph, curation_best_opportunities, pull_grt_balance_from_subgraph, optimize_signals
 import json
 import pandas as pd
 import os
@@ -76,26 +76,19 @@ print("====== Next choosing new subgraphs to signal on ======")
 
 # pull GRT balance
 print("GRT Balance")
-pull_grt_balance_from_subgraph = pull_grt_balance_from_subgraph()
-balance = pull_grt_balance_from_subgraph['balance']
+balance = pull_grt_balance_from_subgraph()
+balance = balance['balance']
 print(balance)
-
 
 # Find best current opportunities
 print("\n====== Next determine new signalling actions ======")
-curation_best_opportunities = curation_best_opportunities()
+best_opportunities = curation_best_opportunities()
+print(best_opportunities)
+# Find the optimal signal strategy
+new_signals = optimize_signals(best_opportunities, total_new_signal=balance, min_allocation=100.0)
+print(new_signals)
 
-print(curation_best_opportunities)
-
-# here figure out optimal signal strategy
-# can probably take the ratio and use that to figure out new position impact
-
-
-
-# or tools step here to optimize 
-
-# Curate on subgraphs
-# when adding new signal if there are additional APR calculations (for safety check) make sure it does NOT use $4 price assumption
+# Now add signal to the subgraphs
 
 
 # deployment: set it up on hetzner python server to execute daily

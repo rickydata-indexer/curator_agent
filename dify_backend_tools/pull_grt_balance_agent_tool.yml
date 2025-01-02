@@ -1,0 +1,169 @@
+app:
+  description: Pulls GRT balance for a user
+  icon: ⏬
+  icon_background: '#E6F4D7'
+  mode: workflow
+  name: pull_grt_balance_agent_tool
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: c035afb7-5529-417c-bcb3-c302832c5335
+    name: infura_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  - description: ''
+    id: 224e48c0-e6a5-4b6d-9fb3-4756eeb18322
+    name: wallet_address
+    selector: []
+    value: '0xAB1D1366de8b5D1E3479f01b0D73BcC93048f6d5'
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: tool
+      id: 1733099758931-source-1735382021242-target
+      source: '1733099758931'
+      sourceHandle: source
+      target: '1735382021242'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: end
+      id: 1735382021242-source-1733100278004-target
+      source: '1735382021242'
+      sourceHandle: source
+      target: '1733100278004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 52
+      id: '1733099758931'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1735382021242'
+          - text
+          variable: balance
+        selected: false
+        title: Return User Balance
+        type: end
+      height: 88
+      id: '1733100278004'
+      position:
+        x: 686
+        y: 282
+      positionAbsolute:
+        x: 686
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        provider_id: bd39682c-01a6-4dca-b195-bb3db87e62b1
+        provider_name: pull_grt_balance
+        provider_type: workflow
+        selected: true
+        title: pull_grt_balance
+        tool_configurations: {}
+        tool_label: pull_grt_balance
+        tool_name: pull_grt_balance
+        tool_parameters:
+          infura_api_key:
+            type: mixed
+            value: '{{#env.infura_api_key#}}'
+          wallet_address:
+            type: mixed
+            value: '{{#env.wallet_address#}}'
+        type: tool
+      height: 52
+      id: '1735382021242'
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 131.2557415891108
+      y: 119.2473110197148
+      zoom: 0.6615347044814455

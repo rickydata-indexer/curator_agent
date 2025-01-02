@@ -161,12 +161,12 @@ workflow:
           required: true
           type: text-input
           variable: subgraph_deployment_ipfs_hash
-        - label: infura_api_key
-          max_length: 48
+        - label: rpc_url
+          max_length: 200
           options: []
           required: true
           type: text-input
-          variable: infura_api_key
+          variable: rpc_url
       height: 140
       id: '1733078508640'
       position:
@@ -222,7 +222,7 @@ workflow:
           \ not subgraphs:\n            return None\n            \n        return\
           \ subgraphs[0].get('currentVersion', {}).get('subgraphDeployment', {}).get('ipfsHash')\n\
           \    except:\n        return None\n\ndef main(wallet_address: str, amount_signal:\
-          \ float, private_key: str, infura_api_key: str, subgraph_id: str, high_apr_data:\
+          \ float, private_key: str, rpc_url: str, subgraph_id: str, high_apr_data:\
           \ str, thegraph_api_key: str) -> Dict[str, Any]:\n    \"\"\"\n    Burn signal\
           \ (undelegate) from a subgraph on Arbitrum.\n    Uses Arbitrum's gas estimation.\n\
           \    Prevents undelegating from subgraphs with high APR.\n    Rounds down\
@@ -244,7 +244,7 @@ workflow:
           \ if APR is above 30%\n                        return {\n              \
           \              \"result\": f\"Cannot undelegate from this subgraph as it\
           \ is currently earning {subgraph_metrics['apr']:.2f}% APR\"\n          \
-          \              }\n            \n        w3 = Web3(Web3.HTTPProvider(f'https://arbitrum-mainnet.infura.io/v3/{infura_api_key}'))\n\
+          \              }\n            \n        w3 = Web3(Web3.HTTPProvider(f'{rpc_url}'))\n\
           \        \n        if not w3.is_connected():\n            return {\"result\"\
           : \"Failed to connect to Arbitrum network\"}\n            \n        if not\
           \ w3.is_address(wallet_address):\n            return {\"result\": \"Invalid\
@@ -305,7 +305,7 @@ workflow:
           result:
             children: null
             type: string
-        selected: false
+        selected: true
         title: Burn Signal from Subgraph
         type: code
         variables:
@@ -322,9 +322,9 @@ workflow:
           - agent_one_pk
           variable: private_key
         - value_selector:
-          - env
-          - infura_api_key
-          variable: infura_api_key
+          - '1733078508640'
+          - rpc_url
+          variable: rpc_url
         - value_selector:
           - '1733087354699'
           - subgraph_nft_id
@@ -521,7 +521,7 @@ workflow:
         tool_parameters:
           infura_api_key:
             type: mixed
-            value: '{{#1733078508640.infura_api_key#}}'
+            value: '{{#1733078508640.rpc_url#}}'
           ipfs_subgrah_deployment:
             type: mixed
             value: '{{#1733078508640.subgraph_deployment_ipfs_hash#}}'
@@ -543,6 +543,6 @@ workflow:
       type: custom
       width: 243
     viewport:
-      x: -385.4151139857099
-      y: 38.38576371388285
+      x: 68.58488601429008
+      y: -68.6142362861172
       zoom: 0.7156971529830835

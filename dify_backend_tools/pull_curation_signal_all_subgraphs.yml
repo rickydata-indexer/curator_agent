@@ -1,0 +1,201 @@
+app:
+  description: Pulls the curation signal for a all subgraphs
+  icon: 🆑
+  icon_background: '#FCE7F6'
+  mode: workflow
+  name: pull_curation_signal_all_subgraphs
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: 9e4b9d5b-756b-4d7b-bf9f-ab03d8c48e58
+    name: thegraph_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1733044933647-source-1733097756592-target
+      source: '1733044933647'
+      sourceHandle: source
+      target: '1733097756592'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1733097756592-source-1733047024401-target
+      source: '1733097756592'
+      sourceHandle: source
+      target: '1733047024401'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Provide a subgraph IPFS deployment hash and get curation signal for
+          it back
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 112
+      id: '1733044933647'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1733097756592'
+          - result
+          variable: subgraph_signal
+        selected: false
+        title: Return data
+        type: end
+      height: 88
+      id: '1733047024401'
+      position:
+        x: 712.0570763516638
+        y: 282
+      positionAbsolute:
+        x: 712.0570763516638
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "import requests\nimport json\nfrom typing import Dict, Any, List\n\n\
+          def main(thegraph_api_key: str) -> Dict[str, Any]:\n    \"\"\"\n    Query\
+          \ The Graph gateway to get all subgraph deployments with pagination.\n \
+          \   \n    Args:\n        thegraph_api_key: API key for The Graph gateway\n\
+          \        \n    Returns:\n        Dict containing array of deployments or\
+          \ error message\n    \"\"\"\n    try:\n        # GraphQL endpoint\n    \
+          \    url = f\"https://gateway.thegraph.com/api/{thegraph_api_key}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp\"\
+          \n        \n        # Query template for pagination\n        query_template\
+          \ = '''\n        {\n          subgraphDeployments(first: 1000, where: {id_gt:\
+          \ \"%s\", deniedAt: 0, signalledTokens_gt: \"100000000000000000000\"}, orderBy:\
+          \ id, orderDirection: asc) {\n            id\n            ipfsHash\n   \
+          \         signalAmount\n            signalledTokens\n            stakedTokens\n\
+          \            queryFeesAmount\n            queryFeeRebates\n          }\n\
+          \        }\n        '''\n        \n        all_deployments = []\n      \
+          \  last_id = \"\"\n        \n        while True:\n            # Construct\
+          \ query with current last_id\n            query = query_template % last_id\n\
+          \            \n            # Make the request\n            response = requests.post(\n\
+          \                url,\n                json={'query': query}\n         \
+          \   )\n            \n            # Check if request was successful\n   \
+          \         if response.status_code != 200:\n                return {\n  \
+          \                  \"result\": []\n                }\n                \n\
+          \            # Parse response\n            data = response.json()\n    \
+          \        \n            # Check for errors in response\n            if 'errors'\
+          \ in data:\n                return {\n                    \"result\": []\n\
+          \                }\n                \n            # Get deployments from\
+          \ response\n            deployments = data.get('data', {}).get('subgraphDeployments',\
+          \ [])\n            \n            # Break if no more deployments\n      \
+          \      if not deployments:\n                break\n            \n      \
+          \      # Add deployments to our list\n            all_deployments.extend([{\n\
+          \                'id': d.get('id', ''),\n                'ipfsHash': d.get('ipfsHash',\
+          \ ''),\n                'signalAmount': d.get('signalAmount', '0'),\n  \
+          \              'signalledTokens': d.get('signalledTokens', '0'),\n     \
+          \           'stakedTokens': d.get('stakedTokens', '0'),\n              \
+          \  'queryFeesAmount': d.get('queryFeesAmount', '0'),\n                'queryFeeRebates':\
+          \ d.get('queryFeeRebates', '0')\n            } for d in deployments])\n\
+          \            \n            # Update last_id for next iteration\n       \
+          \     last_id = deployments[-1]['id']\n                \n        return\
+          \ {\n            \"result\": all_deployments\n        }\n            \n\
+          \    except Exception as e:\n        return {\n            \"result\": []\n\
+          \        }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: array[object]
+        selected: true
+        title: Code
+        type: code
+        variables:
+        - value_selector:
+          - env
+          - thegraph_api_key
+          variable: thegraph_api_key
+      height: 52
+      id: '1733097756592'
+      position:
+        x: 405.94292364833643
+        y: 282
+      positionAbsolute:
+        x: 405.94292364833643
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -34.994365006339194
+      y: 61.58649850443521
+      zoom: 0.981329759188849

@@ -1,0 +1,216 @@
+app:
+  description: Pull hourly query volume data for all subgraph deployments
+  icon: 📊
+  icon_background: '#E0F2FE'
+  mode: workflow
+  name: pull_specific_subgraph_query_volume
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: a9432cfa-85ee-44f1-8f21-31ea099b7479
+    name: supabase_url
+    selector: []
+    value: http://supabasekong-so4w8gock004k8kw8ck84o80.94.130.17.180.sslip.io
+    value_type: string
+  - description: ''
+    id: 202f5345-99e6-44eb-873c-0c3552d3b7c4
+    name: supabase_credentials
+    selector: []
+    value: ''
+    value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1733047838073-source-1733049113079-target
+      source: '1733047838073'
+      sourceHandle: source
+      target: '1733049113079'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1733049113079-source-1733049643078-target
+      source: '1733049113079'
+      sourceHandle: source
+      target: '1733049643078'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: num_days
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: num_days
+        - label: ipfs_subgraph_deployment
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: ipfs_subgraph_deployment
+      height: 114
+      id: '1733047838073'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "import base64\nimport json\nfrom typing import Dict, Any, List\n\n\
+          def main(num_days: str, supabase_credentials: str, supabase_url: str, ipfs_subgraph_deployment:\
+          \ str = None) -> Dict[str, Any]:\n    try:\n        import requests\n  \
+          \      API_URL = f\"{supabase_url}/api/pg-meta/default/query\"\n       \
+          \ auth_bytes = supabase_credentials.encode('ascii')\n        base64_auth\
+          \ = base64.b64encode(auth_bytes).decode('ascii')\n        \n        headers\
+          \ = {\n            \"Authorization\": f\"Basic {base64_auth}\",\n      \
+          \      \"Content-Type\": \"application/json\",\n            \"Accept\":\
+          \ \"application/json\"\n        }\n\n        filter_clause = f\"AND subgraph_deployment_ipfs_hash\
+          \ = '{ipfs_subgraph_deployment}'\" if ipfs_subgraph_deployment else \"\"\
+          \n        \n        sql_query = f\"\"\"\n        SELECT\n            subgraph_deployment_ipfs_hash,\n\
+          \            SUM(query_count) AS total_query_count\n        FROM public.qos_hourly_query_volume\n\
+          \        WHERE start_epoch >= NOW() - INTERVAL '{num_days} days'\n     \
+          \   {filter_clause}\n        GROUP BY 1\n        ORDER BY total_query_count\
+          \ DESC\n        LIMIT 300\n        \"\"\"\n\n        response = requests.post(\n\
+          \            API_URL,\n            headers=headers,\n            json={\"\
+          query\": sql_query}\n        )\n\n        if response.status_code == 200:\n\
+          \            data = response.json()\n            results = [{\n        \
+          \        \"subgraph_deployment_ipfs_hash\": row['subgraph_deployment_ipfs_hash'],\n\
+          \                \"query_count\": int(row['total_query_count'])\n      \
+          \      } for row in data if row.get('subgraph_deployment_ipfs_hash') and\
+          \ row.get('total_query_count')]\n\n            return {\"result\": results}\n\
+          \            \n        return {\"result\": []}\n\n    except Exception as\
+          \ e:\n        return {\"result\": []}"
+        code_language: python3
+        desc: Pull query volume for subgraph deployment and specified number of days.
+          Currently has a 300 result limit (Dify has this, can be adjusted with a
+          .env variable)
+        outputs:
+          result:
+            children: null
+            type: array[object]
+        selected: true
+        title: Pull Query Volume
+        type: code
+        variables:
+        - value_selector:
+          - env
+          - supabase_credentials
+          variable: supabase_credentials
+        - value_selector:
+          - '1733047838073'
+          - num_days
+          variable: num_days
+        - value_selector:
+          - env
+          - supabase_url
+          variable: supabase_url
+        - value_selector:
+          - '1733047838073'
+          - ipfs_subgraph_deployment
+          variable: ipfs_subgraph_deployment
+      height: 144
+      id: '1733049113079'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1733049113079'
+          - result
+          variable: data
+        selected: false
+        title: Return Query Volume
+        type: end
+      height: 88
+      id: '1733049643078'
+      position:
+        x: 685
+        y: 282
+      positionAbsolute:
+        x: 685
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -38.281805229989914
+      y: 180.1458543025707
+      zoom: 0.8063010604215622

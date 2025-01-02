@@ -164,13 +164,7 @@ workflow:
           required: true
           type: text-input
           variable: user_wallet
-        - label: infura_api_key
-          max_length: 48
-          options: []
-          required: true
-          type: text-input
-          variable: infura_api_key
-      height: 114
+      height: 88
       id: '1735256818831'
       position:
         x: 219.66862088593547
@@ -296,8 +290,8 @@ workflow:
           body:
             children: null
             type: array[object]
-        selected: false
-        title: Code
+        selected: true
+        title: Extract current value
         type: code
         variables:
         - value_selector:
@@ -319,7 +313,7 @@ workflow:
       width: 243
     - data:
         desc: check the APR of specific subgraphs
-        error_handle_mode: terminated
+        error_handle_mode: remove-abnormal-output
         height: 228
         is_parallel: true
         iterator_selector:
@@ -522,6 +516,6 @@ workflow:
       type: custom
       width: 243
     viewport:
-      x: -475.9654361276596
-      y: 56.72723861197551
+      x: 103.03456387234041
+      y: 139.72723861197537
       zoom: 0.7308980410675602

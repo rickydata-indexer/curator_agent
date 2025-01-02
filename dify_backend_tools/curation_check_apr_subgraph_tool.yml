@@ -1,0 +1,433 @@
+app:
+  description: Checks the curation signal APR on a specific subgraph
+  icon: ❗
+  icon_background: '#D5F5F6'
+  mode: workflow
+  name: curation_check_apr_subgraph_tool
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: ee3f8276-fabd-4894-a47a-ab6cf8032ab2
+    name: infura_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  - description: ''
+    id: 63df9fad-24da-4d80-b17b-dbe2d5e7945d
+    name: thegraph_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  - description: ''
+    id: 4a3bbc32-f725-44b5-9c84-9215597eca34
+    name: agent_address
+    selector: []
+    value: '0xab1d1366de8b5d1e3479f01b0d73bcc93048f6d5'
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1733182462673-source-1733182527333-target
+      source: '1733182462673'
+      sourceHandle: source
+      target: '1733182527333'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: tool
+      id: 1733182527333-source-1735229512478-target
+      source: '1733182527333'
+      sourceHandle: source
+      target: '1735229512478'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: tool
+      id: 1735229512478-source-1735228936605-target
+      selected: false
+      source: '1735229512478'
+      sourceHandle: source
+      target: '1735228936605'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: code
+      id: 1735254697239-source-1733184685947-target
+      source: '1735254697239'
+      sourceHandle: source
+      target: '1733184685947'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: tool
+      id: 1735228936605-source-1735671853463-target
+      source: '1735228936605'
+      sourceHandle: source
+      target: '1735671853463'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: tool
+        targetType: tool
+      id: 1735671853463-source-1735254697239-target
+      source: '1735671853463'
+      sourceHandle: source
+      target: '1735254697239'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1733184685947-source-1733182826895-target
+      source: '1733184685947'
+      sourceHandle: source
+      target: '1733182826895'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: true
+        title: Start
+        type: start
+        variables:
+        - label: ipfs_subgrah_deployment
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: ipfs_subgrah_deployment
+      height: 88
+      id: '1733182462673'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "\ndef main() -> dict:\n    return {\n        \"num_days\": 7\n    }\n"
+        code_language: python3
+        desc: Set the number of days to query historical query volume data for
+        outputs:
+          num_days:
+            children: null
+            type: number
+        selected: false
+        title: Set num_days
+        type: code
+        variables: []
+      height: 96
+      id: '1733182527333'
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1733182462673'
+          - ipfs_subgrah_deployment
+          variable: ipfs_subgraph_deployment
+        - value_selector:
+          - '1733184685947'
+          - apr
+          variable: apr
+        selected: false
+        title: End
+        type: end
+      height: 114
+      id: '1733182826895'
+      position:
+        x: 2212.08271070637
+        y: 282
+      positionAbsolute:
+        x: 2212.08271070637
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "from typing import Dict, List, Any, Optional, Union\nimport json\n\n\
+          def main(\n   signal_data: Union[str, Dict], \n   query_data: Union[str,\
+          \ Dict], \n   grt_balance_data: Union[str, Dict],\n   grt_price: Union[str,\
+          \ Dict],\n   min_apr: float = 0.0,\n   min_weekly_queries: int = 0,\n  \
+          \ min_subgraph_signal: float = 0.0\n) -> Dict[str, Any]:\n   \"\"\"\n  \
+          \ Calculate metrics for a single subgraph from signal, query, and balance\
+          \ data.\n   \"\"\"\n   try:\n       # Parse JSON strings if needed\n   \
+          \    if isinstance(signal_data, str):\n           signal_data = json.loads(signal_data.strip())\
+          \  # Remove newlines\n       if isinstance(query_data, str):\n         \
+          \  query_data = json.loads(query_data.strip())  # Remove newlines\n    \
+          \   if isinstance(grt_balance_data, str):\n           grt_balance_data =\
+          \ json.loads(grt_balance_data.strip())  # Remove newlines\n       if isinstance(grt_price,\
+          \ str):\n           grt_price = json.loads(grt_price.strip())\n\n      \
+          \ # Extract GRT price from the new format\n       current_price = float(grt_price.get('price',\
+          \ '0'))\n       print(f\"Current GRT price: {current_price}\")  # Debug\
+          \ log\n\n       # Extract data from the new format\n       ipfs_hash = query_data.get('subgraph_deployment_id')\n\
+          \       weekly_queries = int(query_data.get('query_volume', 0))\n      \
+          \ weekly_query_fees_grt = float(query_data.get('query_fees', 0))\n     \
+          \  signal_amount = float(signal_data.get('subgraph_signal', 0))\n      \
+          \ \n       print(f\"IPFS Hash: {ipfs_hash}\")  # Debug log\n       print(f\"\
+          Weekly Queries: {weekly_queries}\")  # Debug log\n       print(f\"Weekly\
+          \ Query Fees (GRT): {weekly_query_fees_grt}\")  # Debug log\n       print(f\"\
+          Signal Amount: {signal_amount}\")  # Debug log\n       \n       # Calculate\
+          \ metrics using actual query fees\n       annual_queries = weekly_queries\
+          \ * 52\n       annual_query_fees_grt = weekly_query_fees_grt * 52  # Annualize\
+          \ the weekly fees\n       total_earnings = annual_query_fees_grt * current_price\
+          \  # Convert GRT to USD\n       curator_share = total_earnings * 0.1  #\
+          \ 10% to curators\n       \n       # For this case, signal_amount and signalled_tokens\
+          \ are the same\n       signalled_tokens = signal_amount\n       \n     \
+          \  # Calculate portion owned and earnings (in this case it's 100% since\
+          \ it's one signal)\n       estimated_earnings = curator_share\n       \n\
+          \       # Calculate APR using dynamic GRT price\n       apr = (estimated_earnings\
+          \ / (signal_amount * current_price)) * 100 if signal_amount > 0 else 0\n\
+          \       \n       print(f\"Calculated APR: {apr}\")  # Debug log\n      \
+          \ \n       return {\n           \"apr\": apr\n       }\n       \n      \
+          \ return {\n           \"apr\": []  # Return a string for consistency\n\
+          \       }\n           \n   except Exception as e:\n       print(f\"Error\
+          \ occurred: {str(e)}\")  # For debugging\n       print(f\"Input data:\"\
+          )  # Debug log\n       print(f\"Signal data: {signal_data}\")\n       print(f\"\
+          Query data: {query_data}\")\n       print(f\"GRT price data: {grt_price}\"\
+          )\n       return {\n           \"result\": []\n       }"
+        code_language: python3
+        desc: ''
+        outputs:
+          apr:
+            children: null
+            type: number
+        selected: false
+        title: Calculate APRs
+        type: code
+        variables:
+        - value_selector:
+          - '1735229512478'
+          - text
+          variable: query_data
+        - value_selector:
+          - '1735671853463'
+          - text
+          variable: grt_balance_data
+        - value_selector:
+          - '1735228936605'
+          - text
+          variable: signal_data
+        - value_selector:
+          - '1735254697239'
+          - text
+          variable: grt_price
+      height: 52
+      id: '1733184685947'
+      position:
+        x: 1892.4604613239244
+        y: 282
+      positionAbsolute:
+        x: 1892.4604613239244
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: Pull existing signal on subgraph deployment
+        provider_id: 3b034232-b410-4d16-88aa-c7fac3a1d614
+        provider_name: pull_curation_signal_subgraph_deployment
+        provider_type: workflow
+        selected: false
+        title: pull_curation_signal_subgraph_deployment
+        tool_configurations: {}
+        tool_label: pull_curation_signal_subgraph_deployment
+        tool_name: pull_curation_signal_subgraph_deployment
+        tool_parameters:
+          subgraph_deployment_id:
+            type: mixed
+            value: '{{#1733182462673.ipfs_subgrah_deployment#}}'
+        type: tool
+      height: 96
+      id: '1735228936605'
+      position:
+        x: 1000.9884600335031
+        y: 282
+      positionAbsolute:
+        x: 1000.9884600335031
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: Pull query volume for the subgraph deployment
+        provider_id: f69a29c7-b7a9-4726-ac16-3c1adc72405c
+        provider_name: pull_subgraph_deployment_query_volume
+        provider_type: workflow
+        selected: false
+        title: pull_subgraph_deployment_query_volume
+        tool_configurations: {}
+        tool_label: pull_subgraph_deployment_query_volume
+        tool_name: pull_subgraph_deployment_query_volume
+        tool_parameters:
+          num_days:
+            type: variable
+            value:
+            - '1733182527333'
+            - num_days
+          subgraph_deployment_id:
+            type: mixed
+            value: '{{#1733182462673.ipfs_subgrah_deployment#}}'
+        type: tool
+      height: 96
+      id: '1735229512478'
+      position:
+        x: 686
+        y: 282
+      positionAbsolute:
+        x: 686
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: check GRT price
+        provider_id: e017c7ac-f31f-4eaf-bfc3-a1717842424c
+        provider_name: current_grt_price_usd
+        provider_type: workflow
+        selected: false
+        title: current_grt_price_usd
+        tool_configurations: {}
+        tool_label: current_grt_price_usd
+        tool_name: current_grt_price_usd
+        tool_parameters: {}
+        type: tool
+      height: 80
+      id: '1735254697239'
+      position:
+        x: 1591.7697693380378
+        y: 282
+      positionAbsolute:
+        x: 1591.7697693380378
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: Pull user GRT balance
+        provider_id: b44bc0d5-542c-416e-ac02-b797a6eb381b
+        provider_name: pull_grt_balance_from_subgraph
+        provider_type: workflow
+        selected: false
+        title: pull_grt_balance_from_subgraph
+        tool_configurations: {}
+        tool_label: pull_grt_balance_from_subgraph
+        tool_name: pull_grt_balance_from_subgraph
+        tool_parameters:
+          thegraph_api_key:
+            type: mixed
+            value: '{{#env.thegraph_api_key#}}'
+          user_wallet:
+            type: mixed
+            value: '{{#env.agent_address#}}'
+        type: tool
+      height: 80
+      id: '1735671853463'
+      position:
+        x: 1305.3023066196222
+        y: 282
+      positionAbsolute:
+        x: 1305.3023066196222
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 325.8544930884707
+      y: 59.479007608969596
+      zoom: 0.7611238713599717

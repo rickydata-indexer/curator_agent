@@ -1,0 +1,226 @@
+app:
+  description: Pulls the curation signal for a given subgraph deployment IPFS hash
+  icon: 🆑
+  icon_background: '#D1E9FF'
+  mode: workflow
+  name: pull_curation_signal_subgraph_deployment
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: 9e4b9d5b-756b-4d7b-bf9f-ab03d8c48e58
+    name: thegraph_api_key
+    selector: []
+    value: ''
+    value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: 1733044933647-source-1733044938487-target
+      source: '1733044933647'
+      sourceHandle: source
+      target: '1733044938487'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: 1733044938487-source-1733047337782-target
+      source: '1733044938487'
+      sourceHandle: source
+      target: '1733047337782'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1733047337782-source-1733047024401-target
+      source: '1733047337782'
+      sourceHandle: source
+      target: '1733047024401'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Provide a subgraph IPFS deployment hash and get curation signal for
+          it back
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: subgraph_deployment_id
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: subgraph_deployment_id
+      height: 148
+      id: '1733044933647'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-123
+            key: ''
+            type: text
+            value: "{\n  \"query\": \"{ subgraphDeployments(first: 1, where: {ipfsHash:\
+              \ \\\"{{#1733044933647.subgraph_deployment_id#}}\\\"}, orderBy: signalledTokens,\
+              \ orderDirection: asc) { signalledTokens } }\"\n}"
+          type: json
+        desc: ''
+        headers: Content-Type:application/json
+        method: post
+        params: ''
+        selected: false
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: Pull curation signal for subgraph deployment
+        type: http-request
+        url: https://gateway.thegraph.com/api/{{#env.thegraph_api_key#}}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp
+        variables: []
+      height: 159
+      id: '1733044938487'
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1733047337782'
+          - result
+          variable: subgraph_signal
+        selected: false
+        title: Return subgraph signal
+        type: end
+      height: 88
+      id: '1733047024401'
+      position:
+        x: 986
+        y: 282
+      positionAbsolute:
+        x: 986
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "def main(query_result: str) -> dict:\n    import json\n    \n    if\
+          \ not query_result:\n        return {\"content\": \"0\"}\n        \n   \
+          \ try:\n        # Parse JSON string to dict\n        tokens = json.loads(query_result)\n\
+          \        tokens_str = tokens['data']['subgraphDeployments'][0]['signalledTokens']\n\
+          \        \n        # Convert to float, divide by 10^18, and round to 2 decimal\
+          \ places\n        tokens_float = round(float(tokens_str) / (10 ** 18), 2)\n\
+          \        \n        return {\n            \"result\": str(tokens_float)\n\
+          \        }\n    except (json.JSONDecodeError, KeyError, IndexError, ValueError,\
+          \ TypeError):\n        return {\"result\": \"NA\"}"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: Extract number from response
+        type: code
+        variables:
+        - value_selector:
+          - '1733044938487'
+          - body
+          variable: query_result
+      height: 52
+      id: '1733047337782'
+      position:
+        x: 686
+        y: 282
+      positionAbsolute:
+        x: 686
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -107.5
+      y: 81
+      zoom: 1

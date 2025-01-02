@@ -1,0 +1,187 @@
+app:
+  description: Pull GRT balance for a user
+  icon: ⏬
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: pull_grt_balance_from_subgraph
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 10
+        file_size_limit: 150
+        image_file_size_limit: 100
+        video_file_size_limit: 500
+        workflow_file_upload_limit: 30
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: code
+      id: 1735671393518-source-1735671474948-target
+      source: '1735671393518'
+      sourceHandle: source
+      target: '1735671474948'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: end
+      id: 1735671474948-source-1735671571302-target
+      source: '1735671474948'
+      sourceHandle: source
+      target: '1735671571302'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: thegraph_api_key
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: thegraph_api_key
+        - label: user_wallet
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: user_wallet
+      height: 114
+      id: '1735671393518'
+      position:
+        x: 79
+        y: 282
+      positionAbsolute:
+        x: 79
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "import requests\n\ndef main(thegraph_api_key: str, user_wallet: str)\
+          \ -> dict:\n    # Define the GraphQL query\n    query = \"\"\"\n    query\
+          \ ($id: ID!) {\n      graphAccount(id: $id) {\n        balance\n      }\n\
+          \    }\n    \"\"\"\n    \n    # Define the variables for the query\n   \
+          \ variables = {\n        \"id\": user_wallet.lower()\n    }\n    \n    #\
+          \ Construct the API endpoint\n    endpoint = f\"https://gateway.thegraph.com/api/{thegraph_api_key}/subgraphs/id/DZz4kDTdmzWLWsV373w2bSmoar3umKKH9y82SUKr5qmp\"\
+          \n    \n    # Make the POST request to The Graph API\n    try:\n       \
+          \ response = requests.post(\n            endpoint,\n            json={\"\
+          query\": query, \"variables\": variables},\n            headers={\"Content-Type\"\
+          : \"application/json\"}\n        )\n        # Raise an error if the request\
+          \ failed\n        response.raise_for_status()\n    except requests.exceptions.RequestException\
+          \ as e:\n        return {\"error\": f\"Request failed: {str(e)}\"}\n   \
+          \ \n    # Parse the response JSON\n    data = response.json()\n    \n  \
+          \  # Check for errors in the response\n    if \"errors\" in data:\n    \
+          \    return {\"error\": data[\"errors\"]}\n    \n    # Return the balance\
+          \ from the response\n    return {\n        \"result\": int(data.get(\"data\"\
+          , {}).get(\"graphAccount\", {}).get(\"balance\", None))/10**18\n    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: number
+        selected: false
+        title: Balance GraphQL Query
+        type: code
+        variables:
+        - value_selector:
+          - '1735671393518'
+          - thegraph_api_key
+          variable: thegraph_api_key
+        - value_selector:
+          - '1735671393518'
+          - user_wallet
+          variable: user_wallet
+      height: 52
+      id: '1735671474948'
+      position:
+        x: 371
+        y: 282
+      positionAbsolute:
+        x: 371
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1735671474948'
+          - result
+          variable: balance
+        selected: false
+        title: End
+        type: end
+      height: 88
+      id: '1735671571302'
+      position:
+        x: 672
+        y: 282
+      positionAbsolute:
+        x: 672
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -181.5
+      y: 120
+      zoom: 1

@@ -8,7 +8,7 @@ from scipy.optimize import minimize
 from typing import Dict, List
 
 # Functions to interact with Dify backend. Tools defined by the API keys, which all need to be set in .env
-def curation_user_signals():
+def curation_user_signals(user_wallet="0xAB1D1366de8b5D1E3479f01b0D73BcC93048f6d5"):
     # Load environment variables from .env file
     load_dotenv()
     """Use Dify workflow to get curation agent signals data"""
@@ -19,8 +19,7 @@ def curation_user_signals():
     }
     payload = {
         'inputs': {
-            'user_wallet': "0xAB1D1366de8b5D1E3479f01b0D73BcC93048f6d5",
-            'infura_api_key': f"{os.getenv('INFURA_API_KEY')}"
+            'user_wallet': user_wallet
         },
         'response_mode': 'blocking',
         'user': 'curation_agent_python'
@@ -46,7 +45,7 @@ def unsignal_from_subgraph(subgraph_deployment_ipfs_hash, amount_signal=0.001):
         'inputs': {
             'amount_signal': amount_signal,
             'subgraph_deployment_ipfs_hash': subgraph_deployment_ipfs_hash,
-            'infura_api_key': f"{os.getenv('INFURA_API_KEY')}" 
+            'rpc_url': f"{os.getenv('RPC_URL')}" 
         },
         'response_mode': 'blocking',
         'user': 'curation_agent_python'
@@ -225,7 +224,7 @@ def curate_subgraph(subgraph_deployment_ipfs_hash, amount_grt):
         'inputs': {
             'amount_grt': amount_grt,
             'subgraph_deployment_ipfs_hash': subgraph_deployment_ipfs_hash,
-            'infura_api_key': f"{os.getenv('INFURA_API_KEY')}",
+            'rpc_url': f"{os.getenv('RPC_URL')}",
             'user_wallet': f"{os.getenv('AGENT_WALLET')}"
         },
         'response_mode': 'blocking',

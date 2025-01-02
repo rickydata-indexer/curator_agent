@@ -1,14 +1,21 @@
-from tools import curation_user_signals, unsignal_from_subgraph, curation_best_opportunities, pull_grt_balance_from_subgraph, optimize_signals
+from tools import curation_user_signals, unsignal_from_subgraph, curation_best_opportunities, pull_grt_balance_from_subgraph, optimize_signals, curate_subgraph
 import json
 import pandas as pd
 import os
+import logging
 from dotenv import load_dotenv
 load_dotenv()
+
+# Configure logging (only used when curating on subgraphs)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # ====== Unsignalling ======
 
 print("\nPulling curation user signals...")
-signals_response = curation_user_signals()
+signals_response = curation_user_signals("0xAB1D1366de8b5D1E3479f01b0D73BcC93048f6d5")
 
 if not signals_response or 'body' not in signals_response:
     print("No active signals found (or all signals are less than 28 days old)")
@@ -80,15 +87,35 @@ balance = pull_grt_balance_from_subgraph()
 balance = balance['balance']
 print(balance)
 
-# Find best current opportunities
-print("\n====== Next determine new signalling actions ======")
-best_opportunities = curation_best_opportunities()
-print(best_opportunities)
-# Find the optimal signal strategy
-new_signals = optimize_signals(best_opportunities, total_new_signal=balance, min_allocation=100.0)
-print(new_signals)
+# Find the optimal signal strategy for available tokens
+if balance > 1:
+    # Find best current opportunities
+    print("\n====== Next determine new signalling actions ======")
+    best_opportunities = curation_best_opportunities()
+    print(best_opportunities)
+    new_signals = optimize_signals(best_opportunities, total_new_signal=balance, min_allocation=1.0)
+    print(new_signals)
+    print("\n====== Open new curation signal positions ======")
+    # Create new curation signal positions
+    for index, row in new_signals.iterrows():
+        try:
+            logging.info(f"Processing subgraph {index + 1}/10: {row['ipfs_hash']}")
+            logging.info(f"Signal amount: {row['new_signal']}")
+            
+            print(curate_subgraph(row['ipfs_hash'], row['new_signal']))
+            
+            logging.info(f"Successfully processed subgraph: {row['ipfs_hash']}")
+        except Exception as e:
+            logging.error(f"Error processing subgraph {row['ipfs_hash']}: {str(e)}")
+        
+    logging.info("Finished processing all subgraphs")
+else:
+    print("Not enough new GRT to open new signals")
 
-# Now add signal to the subgraphs
+
+# ====== End ======
+print("Completed all unsignalling and signaling actions")
+
 
 
 # deployment: set it up on hetzner python server to execute daily

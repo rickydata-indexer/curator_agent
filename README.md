@@ -15,28 +15,36 @@ A tool for managing and optimizing curation on The Graph protocol using set of D
 
 ## Environment Setup
 
-1. Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the following variables:
 
 ```env
 # The Graph API key for querying subgraphs
-THEGRAPH_API_KEY=your_thegraph_api_key
+THEGRAPH_API_KEY=add
+# Dify API key for specific workflow executions
+KEY_curation_user_signals=add
+KEY_pull_subgraph_query_volume=add
+KEY_unsignal_from_subgraph=add
+KEY_curation_best_opportunities=add
+KEY_pull_grt_balance_from_subgraph=add
+KEY_curate_subgraph=add
 
-# Dify API key for workflow execution
-KEY_curation_user_signals=your_dify_workflow_backend_api_key
-# ... keep adding the rest here
-
-# Infura API key for Arbitrum network access
-INFURA_API_KEY=your_infura_api_key
+# RPC URL to perform transactions
+RPC_URL="add"
+# Agent info
+AGENT_WALLET=add
 
 # Base URLs
-THEGRAPH_API_URL=https://gateway.thegraph.com/api
-DIFY_WORKFLOW_URL=https://dify.rickydata.com/v1/workflows/run
+THEGRAPH_API_URL="add"
+DIFY_URL="add"
 ```
-
-
-... keep going
 
 ## Structure
 
 - tools.py takes modular Dify backend tools and makes them available in python
 - curation_agent.py uses tools in logical 
+
+## Running the agent
+
+1. execute tools.py to confirm tools are working correctly
+2. run curation_agent.py on a schedule
+
